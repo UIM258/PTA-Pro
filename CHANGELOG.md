@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.2
+
+- 在 exam/problems/type 题目列表页隐藏左侧 PTA 收藏夹入口。
+- About 入口移动到网页右下角。
+
 ## 0.36.1
 
 - 增加 About 入口，显示 GitHub、GreasyFork、脚本安装和问题反馈地址。
