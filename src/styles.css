@@ -1460,14 +1460,15 @@ button {
   z-index: 2147483000;
   min-height: 26px;
   padding: 3px 8px;
-  color: var(--ptaf-muted);
-  background: rgba(255, 255, 255, 0.82);
+  color: #3b4d63;
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--ptaf-border);
   border-radius: 7px;
   box-shadow: 0 3px 12px rgba(17, 40, 72, 0.12);
   font-size: 11px;
+  font-weight: 600;
   line-height: 1;
-  opacity: 0.72;
+  opacity: 0.9;
   transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
 }
 
@@ -1552,8 +1553,8 @@ button {
 }
 
 :host(.is-night) .ptaf-about-trigger {
-  color: var(--ptaf-muted);
-  background: rgba(23, 36, 58, 0.9);
+  color: #d8e5f5;
+  background: rgba(23, 36, 58, 0.94);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
 }
 

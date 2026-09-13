@@ -4,6 +4,42 @@
 
 PTA-Pro 是项目名，实际安装的油猴脚本名为 **PTA 收藏夹**。脚本运行在 PTA 页面中，提供题目收藏、分类管理、本地快照、作答与代码编辑、判题记录、AI 学习助手和导入导出等功能。
 
+## 界面预览
+
+### 收藏夹、文件夹、标签与分页
+
+![收藏夹主界面](docs/screenshots/01-favorites.png)
+
+### 选择题本地快照、我的作答与参考答案
+
+![选择题快照](docs/screenshots/02-snapshot-choice.png)
+
+### 函数题/编程题快照、我的作答与 PTA 评测详情
+
+![代码题快照](docs/screenshots/03-snapshot-code.png)
+
+### AI 生成内容可保存、按分区删除
+
+![AI 解析](docs/screenshots/04-ai-reference.png)
+
+### 按收藏夹选择性导出 JSON / Markdown
+
+![导出](docs/screenshots/05-export.png)
+
+### 夜间模式
+
+![夜间模式](docs/screenshots/06-night-mode.png)
+
+### 关于与发布地址
+
+![关于](docs/screenshots/07-about.png)
+
+## 演示数据
+
+仓库包含一份可直接导入的演示数据：[PTA-Pro功能演示数据.json](outputs/PTA-Pro功能演示数据.json)。
+
+导入后可以查看单选、判断、填空、函数题、编程题和简答题，以及收藏夹、标签、备注、AI 解析、代码、判题记录和本地快照等核心功能。
+
 ## 主要功能
 
 ### 收藏与管理

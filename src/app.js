@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.3';
+  const APP_VERSION = '0.36.4';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -609,6 +609,13 @@
     if (complexityText) parts.push(section("complexity", "复杂度", escapeHtml(complexityText)));
     return `<div class="ptaf-ai-reference"><div class="ptaf-ai-reference-head"><span class="ptaf-badge warning">AI 生成</span><span>${escapeHtml(ai.model || "未知模型")} · ${escapeHtml(Core.formatDate(ai.generatedAt))}</span><button class="ptaf-btn small danger" type="button" data-ptaf-ai-reference-delete>删除全部</button></div><div class="ptaf-ai-reference-body">${parts.join("")}</div></div>`;
   }
+  function bookmarkDisplayTitle(bookmark) {
+    const label = Core.normalizeWhitespace(bookmark && bookmark.label);
+    const title = Core.normalizeWhitespace(bookmark && bookmark.title);
+    if (!label || !title) return title || label;
+    return title.startsWith(label) ? title : `${label} ${title}`;
+  }
+
   function debounce(fn, delay) {
     let timer = null;
     return function debounced() {
@@ -1726,10 +1733,10 @@
               <div class="ptaf-card-meta">版本 v${APP_VERSION} · 作者 UIM258</div>
               <p class="ptaf-about-description">在 PTA 中收藏和管理题目，保存本地快照、作答与判题记录，并使用 AI 学习助手辅助复习。</p>
               <div class="ptaf-about-links">
-                <a class="ptaf-btn" href="${PROJECT_LINKS.repository}" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
                 <a class="ptaf-btn" href="${PROJECT_LINKS.script}" target="_blank" rel="noopener noreferrer">安装脚本</a>
-                <a class="ptaf-btn" href="${PROJECT_LINKS.issues}" target="_blank" rel="noopener noreferrer">问题反馈</a>
+                <a class="ptaf-btn" href="${PROJECT_LINKS.repository}" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
                 ${PROJECT_LINKS.greasyfork ? `<a class="ptaf-btn" href="${PROJECT_LINKS.greasyfork}" target="_blank" rel="noopener noreferrer">GreasyFork</a>` : '<span class="ptaf-about-pending">GreasyFork 发布后补充</span>'}
+                <a class="ptaf-btn" href="${PROJECT_LINKS.issues}" target="_blank" rel="noopener noreferrer">问题反馈</a>
               </div>
               <div class="ptaf-about-note">收藏、快照和设置默认仅保存在本地浏览器。请遵守 PTA 及所在学校的使用规范。</div>
             </div>
@@ -2275,7 +2282,7 @@
         const skill = AI_SKILLS[action];
         return `<button class="ptaf-btn small ${skill.category === 'reference' ? 'primary' : ''}" type="button" data-ptaf-ai-skill="${action}">${escapeHtml(skill.label)}</button>`;
       };
-      body.innerHTML = `<div class="ptaf-ai-head"><div><strong>${escapeHtml(bookmark.label ? `${bookmark.label} ${bookmark.title}` : bookmark.title)}</strong><div class="ptaf-card-meta">${settings.model ? `模型：${escapeHtml(settings.model)}` : '尚未配置 AI API'}</div></div><button class="ptaf-btn small" id="ptafAiOpenSettings" type="button">AI 设置</button></div>
+      body.innerHTML = `<div class="ptaf-ai-head"><div><strong>${escapeHtml(bookmarkDisplayTitle(bookmark))}</strong><div class="ptaf-card-meta">${settings.model ? `模型：${escapeHtml(settings.model)}` : '尚未配置 AI API'}</div></div><button class="ptaf-btn small" id="ptafAiOpenSettings" type="button">AI 设置</button></div>
         <div class="ptaf-ai-context"><label>发送上下文：<input id="ptafAiIncludeAnswer" type="checkbox" checked> 我的作答/代码</label><label><input id="ptafAiIncludeResult" type="checkbox" checked> PTA 可见评测</label></div>
         <div class="ptaf-ai-group"><div class="ptaf-ai-group-title">题目资料（可保存）</div><div class="ptaf-ai-actions">${['analyze-problem', 'reference-solution', 'knowledge-points'].map(skillButton).join('')}</div></div>
         <div class="ptaf-ai-group"><div class="ptaf-ai-group-title">我的内容（临时，不保存）</div><div class="ptaf-ai-actions">${['review-my-code', 'hint-progression', 'debug-compile-error', 'generate-edge-cases'].map(skillButton).join('')}</div></div>
@@ -2291,7 +2298,7 @@
       const answerText = localAnswers || (bookmark.answer && bookmark.answer.userAnswer) || '';
       const code = snapshot && snapshot.localCode ? snapshot.localCode : latest && latest.code ? latest.code : snapshot && snapshot.codeDraft || '';
       const parts = [
-        `题目：${bookmark.label ? bookmark.label + ' ' : ''}${bookmark.title}`,
+        `题目：${bookmarkDisplayTitle(bookmark)}`,
         `题型：${Core.typeLabel(bookmark.type)}`,
         `题目集：${bookmark.problemSetName || '未命名'}`,
       ];
@@ -2877,7 +2884,7 @@
       this.currentSnapshotId = bookmarkId;
       const snapshot = await this.snapshotStore.get(bookmarkId);
       const body = this.shadow.getElementById('ptafSnapshotBody');
-      this.shadow.getElementById('ptafSnapshotTitle').textContent = `${bookmark.label ? `${bookmark.label} ` : ''}${bookmark.title}`;
+      this.shadow.getElementById('ptafSnapshotTitle').textContent = bookmarkDisplayTitle(bookmark);
       if (!snapshot) {
         body.innerHTML = '<div class="ptaf-empty">还没有本地快照。<br>请在原题页面点击“刷新快照”。</div>';
         this.openModal('snapshot');

@@ -1,0 +1,1039 @@
+{
+  "format": "pta-favorites-export",
+  "version": 1,
+  "exportedAt": "2026-09-13T13:49:45.892Z",
+  "state": {
+    "schemaVersion": 1,
+    "storageVersion": 1,
+    "createdAt": 1789272000000,
+    "updatedAt": 1789307385891,
+    "settings": {
+      "defaultFolderId": "default",
+      "snapshotByDefault": true,
+      "openDetailAfterCollect": false,
+      "maxSubmissions": 8,
+      "pageSize": 5,
+      "folderOrder": [
+        "default",
+        "folder-ds",
+        "folder-algo",
+        "folder-exam"
+      ],
+      "bookmarkOrder": {
+        "all": [
+          "demo-ds-101",
+          "demo-ds-102",
+          "demo-ds-103",
+          "demo-ds-104",
+          "demo-algo-201",
+          "demo-algo-202",
+          "demo-ds-105"
+        ],
+        "default": [],
+        "folder-ds": [
+          "demo-ds-101",
+          "demo-ds-102",
+          "demo-ds-103",
+          "demo-ds-104"
+        ],
+        "folder-algo": [
+          "demo-algo-201",
+          "demo-algo-202"
+        ],
+        "folder-exam": [
+          "demo-ds-101",
+          "demo-ds-104",
+          "demo-ds-105"
+        ]
+      },
+      "shortcuts": {
+        "toggleDrawer": "Alt+Shift+F",
+        "toggleCurrentFavorite": "Alt+Shift+S",
+        "toggleBatchMode": "Alt+Shift+B",
+        "editSnapshotAnswer": "Alt+Shift+E",
+        "snapshotPrev": "Alt+ArrowLeft",
+        "snapshotNext": "Alt+ArrowRight",
+        "snapshotSingle": "Alt+Shift+1",
+        "snapshotSplit": "Alt+Shift+2"
+      },
+      "nightMode": false,
+      "ai": {
+        "baseUrl": "",
+        "model": "",
+        "temperature": 0.2,
+        "maxTokens": 2500,
+        "timeoutMs": 60000
+      }
+    },
+    "folders": {
+      "default": {
+        "id": "default",
+        "name": "默认收藏夹",
+        "parentId": null,
+        "system": true,
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000
+      },
+      "folder-ds": {
+        "id": "folder-ds",
+        "name": "数据结构复习",
+        "parentId": null,
+        "system": false,
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000
+      },
+      "folder-algo": {
+        "id": "folder-algo",
+        "name": "算法专题",
+        "parentId": null,
+        "system": false,
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000
+      },
+      "folder-exam": {
+        "id": "folder-exam",
+        "name": "期末冲刺",
+        "parentId": null,
+        "system": false,
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000
+      }
+    },
+    "bookmarks": {
+      "demo-ds-101": {
+        "id": "demo-ds-101",
+        "problemId": "demo-ds-101",
+        "problemSetId": "demo-ds",
+        "problemSetName": "数据结构 2026 秋",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-101",
+        "title": "2-1 顺序表插入操作的平均时间复杂度",
+        "label": "2-1",
+        "type": "single_choice",
+        "folderIds": [
+          "folder-ds",
+          "folder-exam"
+        ],
+        "tags": [
+          "复杂度",
+          "线性表",
+          "易错"
+        ],
+        "note": "插入位置等概率时，平均需要移动约 n/2 个元素。",
+        "status": "done",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "full",
+          "capturedAt": 1789272001000,
+          "contentHash": "demo-demo-ds-101",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-101",
+          "title": "2-1 顺序表插入操作的平均时间复杂度",
+          "answerVisibility": "revealed"
+        },
+        "answer": {
+          "visibility": "revealed",
+          "officialAnswer": "B",
+          "explanation": "长度为 n 的顺序表共有 n + 1 个可插入位置，等概率插入时平均移动 n/2 个元素，因此时间复杂度为 O(n)。",
+          "userAnswer": "B",
+          "score": 5,
+          "maxScore": 5,
+          "correct": true,
+          "submissionStatus": "",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "pta",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "题目考查顺序表插入操作的平均移动次数。\n\n关键点：插入位置共有 n + 1 个，等概率时平均移动 n/2 个元素。",
+            "answer": "正确答案是 **B. O(n)**。",
+            "referenceCode": "",
+            "knowledgePoints": [
+              "顺序表",
+              "时间复杂度",
+              "平均移动次数"
+            ],
+            "complexity": {
+              "time": "O(n)",
+              "space": "O(1)"
+            },
+            "model": "demo-model",
+            "skillId": "analyze-problem",
+            "skillVersion": "",
+            "generatedAt": 1789272002000,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": []
+      },
+      "demo-ds-102": {
+        "id": "demo-ds-102",
+        "problemId": "demo-ds-102",
+        "problemSetId": "demo-ds",
+        "problemSetName": "数据结构 2026 秋",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-102",
+        "title": "2-2 循环队列判断队满的条件",
+        "label": "2-2",
+        "type": "true_false",
+        "folderIds": [
+          "folder-ds"
+        ],
+        "tags": [
+          "队列",
+          "判断题"
+        ],
+        "note": "要看题目采用牺牲一个存储单元还是设置 size 标记。",
+        "status": "doing",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "full",
+          "capturedAt": 1789272001200,
+          "contentHash": "demo-demo-ds-102",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-102",
+          "title": "2-2 循环队列判断队满的条件",
+          "answerVisibility": "score-only"
+        },
+        "answer": {
+          "visibility": "score-only",
+          "officialAnswer": "",
+          "explanation": "",
+          "userAnswer": "对",
+          "score": 3,
+          "maxScore": 5,
+          "correct": null,
+          "submissionStatus": "部分正确",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "pta",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "",
+            "answer": "",
+            "referenceCode": "",
+            "knowledgePoints": [],
+            "complexity": {
+              "time": "",
+              "space": ""
+            },
+            "model": "",
+            "skillId": "",
+            "skillVersion": "",
+            "generatedAt": 0,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": []
+      },
+      "demo-ds-103": {
+        "id": "demo-ds-103",
+        "problemId": "demo-ds-103",
+        "problemSetId": "demo-ds",
+        "problemSetName": "数据结构 2026 秋",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-103",
+        "title": "2-3 单链表查找第 i 个结点的时间复杂度",
+        "label": "2-3",
+        "type": "fill_blank",
+        "folderIds": [
+          "folder-ds"
+        ],
+        "tags": [
+          "链表",
+          "复杂度"
+        ],
+        "note": "链表只能从头结点开始顺序访问。",
+        "status": "done",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "full",
+          "capturedAt": 1789272001400,
+          "contentHash": "demo-demo-ds-103",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-103",
+          "title": "2-3 单链表查找第 i 个结点的时间复杂度",
+          "answerVisibility": "revealed"
+        },
+        "answer": {
+          "visibility": "revealed",
+          "officialAnswer": "O(n)",
+          "explanation": "单链表不支持随机访问，需要从头结点逐个查找。",
+          "userAnswer": "O(n)",
+          "score": 4,
+          "maxScore": 4,
+          "correct": true,
+          "submissionStatus": "",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "pta",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "",
+            "answer": "",
+            "referenceCode": "",
+            "knowledgePoints": [],
+            "complexity": {
+              "time": "",
+              "space": ""
+            },
+            "model": "",
+            "skillId": "",
+            "skillVersion": "",
+            "generatedAt": 0,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": []
+      },
+      "demo-ds-104": {
+        "id": "demo-ds-104",
+        "problemId": "demo-ds-104",
+        "problemSetId": "demo-ds",
+        "problemSetName": "数据结构 2026 秋",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-104",
+        "title": "6-5 顺序表区间元素删除",
+        "label": "6-5",
+        "type": "function",
+        "folderIds": [
+          "folder-ds",
+          "folder-exam"
+        ],
+        "tags": [
+          "函数题",
+          "数组",
+          "边界"
+        ],
+        "note": "保留区间外的元素，保持原有相对顺序。",
+        "status": "done",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "full",
+          "capturedAt": 1789272001600,
+          "contentHash": "demo-demo-ds-104",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-104",
+          "title": "6-5 顺序表区间元素删除",
+          "answerVisibility": "revealed"
+        },
+        "answer": {
+          "visibility": "revealed",
+          "officialAnswer": "删除所有满足 x ≤ elem[i] ≤ y 的元素。",
+          "explanation": "用一个写指针 k 压缩保留元素，最后更新表长。",
+          "userAnswer": "void DeleteRange(SqList &L, int x, int y) {\nint k = 0;\nfor (int i = 0; i < L.length; ++i) {\nif (L.elem[i] < x || L.elem[i] > y) {\nL.elem[k++] = L.elem[i];\n}\n}\nL.length = k;\n}",
+          "score": 25,
+          "maxScore": 25,
+          "correct": true,
+          "submissionStatus": "",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "pta",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "这是一道顺序表原地删除题。使用读写双指针可以保持线性时间复杂度。",
+            "answer": "使用写指针覆盖需要保留的元素，遍历一次后更新表长。",
+            "referenceCode": "void DeleteRange(SqList &L, int x, int y) {\n    int k = 0;\n    for (int i = 0; i < L.length; ++i) {\n        if (L.elem[i] < x || L.elem[i] > y) {\n            L.elem[k++] = L.elem[i];\n        }\n    }\n    L.length = k;\n}",
+            "knowledgePoints": [
+              "顺序表",
+              "双指针",
+              "原地删除"
+            ],
+            "complexity": {
+              "time": "O(n)",
+              "space": "O(1)"
+            },
+            "model": "demo-model",
+            "skillId": "reference-solution",
+            "skillVersion": "",
+            "generatedAt": 1789272002200,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": [
+          {
+            "id": "sub-demo-func",
+            "submissionId": "sub-demo-func",
+            "language": "C++ (g++)",
+            "compiler": "g++ 12.2",
+            "code": "void DeleteRange(SqList &L, int x, int y) {\n    int k = 0;\n    for (int i = 0; i < L.length; ++i) {\n        if (L.elem[i] < x || L.elem[i] > y) {\n            L.elem[k++] = L.elem[i];\n        }\n    }\n    L.length = k;\n}",
+            "codeHash": "8910e626",
+            "status": "AC",
+            "rawStatus": "答案正确",
+            "score": 25,
+            "maxScore": 25,
+            "compileOutput": "",
+            "testPoints": [
+              {
+                "id": "p1",
+                "label": "样例 1",
+                "result": "答案正确",
+                "score": 10,
+                "maxScore": 10,
+                "timeMs": 2,
+                "memoryKb": 1680,
+                "message": ""
+              },
+              {
+                "id": "p2",
+                "label": "边界与重复元素",
+                "result": "答案正确",
+                "score": 10,
+                "maxScore": 10,
+                "timeMs": 3,
+                "memoryKb": 1724,
+                "message": ""
+              },
+              {
+                "id": "p3",
+                "label": "大规模数据",
+                "result": "答案正确",
+                "score": 5,
+                "maxScore": 5,
+                "timeMs": 8,
+                "memoryKb": 2100,
+                "message": ""
+              }
+            ],
+            "submittedAt": 1789272001800,
+            "capturedAt": 1789272001800,
+            "captureMode": "auto"
+          }
+        ]
+      },
+      "demo-algo-201": {
+        "id": "demo-algo-201",
+        "problemId": "demo-algo-201",
+        "problemSetId": "demo-algo",
+        "problemSetName": "算法基础练习",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-algo-201",
+        "title": "7-1 括号匹配",
+        "label": "7-1",
+        "type": "programming",
+        "folderIds": [
+          "folder-algo"
+        ],
+        "tags": [
+          "栈",
+          "字符串",
+          "WA 复盘"
+        ],
+        "note": "这版代码忘了考虑空字符串，已记录一次 WA 提交。",
+        "status": "doing",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "full",
+          "capturedAt": 1789272002000,
+          "contentHash": "demo-demo-algo-201",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-algo-201",
+          "title": "7-1 括号匹配",
+          "answerVisibility": "hidden"
+        },
+        "answer": {
+          "visibility": "hidden",
+          "officialAnswer": "",
+          "explanation": "",
+          "userAnswer": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\nstring s;\ncin >> s;\nstack<char> st;\nfor (char c : s) {\nif (c == '(' || c == '[' || c == '{') st.push(c);\nelse {\nif (st.empty()) { cout << \"NO\"; return 0; }\nchar t = st.top(); st.pop();\nif ((c == ')' && t != '(') || (c == ']' && t != '[') || (c == '}' && t != '{')) {\ncout << \"NO\"; return 0;\n}\n}\n}\ncout << (st.empty() ? \"YES\" : \"NO\");\nreturn 0;\n}",
+          "score": 80,
+          "maxScore": 100,
+          "correct": false,
+          "submissionStatus": "答案错误",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "pta",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "",
+            "answer": "",
+            "referenceCode": "",
+            "knowledgePoints": [],
+            "complexity": {
+              "time": "",
+              "space": ""
+            },
+            "model": "",
+            "skillId": "",
+            "skillVersion": "",
+            "generatedAt": 0,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": [
+          {
+            "id": "sub-demo-brackets",
+            "submissionId": "sub-demo-brackets",
+            "language": "C++ (g++)",
+            "compiler": "g++ 12.2",
+            "code": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\n    string s;\n    cin >> s;\n    stack<char> st;\n    for (char c : s) {\n        if (c == '(' || c == '[' || c == '{') st.push(c);\n        else {\n            if (st.empty()) { cout << \"NO\"; return 0; }\n            char t = st.top(); st.pop();\n            if ((c == ')' && t != '(') || (c == ']' && t != '[') || (c == '}' && t != '{')) {\n                cout << \"NO\"; return 0;\n            }\n        }\n    }\n    cout << (st.empty() ? \"YES\" : \"NO\");\n    return 0;\n}",
+            "codeHash": "8eb8d5b3",
+            "status": "WA",
+            "rawStatus": "答案错误",
+            "score": 80,
+            "maxScore": 100,
+            "compileOutput": "",
+            "testPoints": [
+              {
+                "id": "b1",
+                "label": "样例 1",
+                "result": "答案正确",
+                "score": 20,
+                "maxScore": 20,
+                "timeMs": 2,
+                "memoryKb": 1700,
+                "message": ""
+              },
+              {
+                "id": "b2",
+                "label": "样例 2",
+                "result": "答案正确",
+                "score": 20,
+                "maxScore": 20,
+                "timeMs": 2,
+                "memoryKb": 1712,
+                "message": ""
+              },
+              {
+                "id": "b3",
+                "label": "空输入",
+                "result": "答案错误",
+                "score": 0,
+                "maxScore": 20,
+                "timeMs": 1,
+                "memoryKb": 1640,
+                "message": "程序需要输出 YES"
+              },
+              {
+                "id": "b4",
+                "label": "复杂嵌套",
+                "result": "答案正确",
+                "score": 20,
+                "maxScore": 20,
+                "timeMs": 3,
+                "memoryKb": 1760,
+                "message": ""
+              }
+            ],
+            "submittedAt": 1789272002100,
+            "capturedAt": 1789272002100,
+            "captureMode": "auto"
+          }
+        ]
+      },
+      "demo-algo-202": {
+        "id": "demo-algo-202",
+        "problemId": "demo-algo-202",
+        "problemSetId": "demo-algo",
+        "problemSetName": "算法基础练习",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-algo-202",
+        "title": "7-2 二叉树层序遍历",
+        "label": "7-2",
+        "type": "programming",
+        "folderIds": [
+          "folder-algo"
+        ],
+        "tags": [
+          "树",
+          "队列",
+          "草稿"
+        ],
+        "note": "还没提交，先保存本地代码草稿。",
+        "status": "doing",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "partial",
+          "capturedAt": 1789272002400,
+          "contentHash": "demo-demo-algo-202",
+          "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-algo-202",
+          "title": "7-2 二叉树层序遍历",
+          "answerVisibility": "hidden"
+        },
+        "answer": {
+          "visibility": "hidden",
+          "officialAnswer": "",
+          "explanation": "",
+          "userAnswer": "void LevelOrder(BiTree T) {\nif (!T) return;\nqueue<BiTree> q;\nq.push(T);\nwhile (!q.empty()) {\nBiTree p = q.front(); q.pop();\ncout << p->data << ' ';\nif (p->lchild) q.push(p->lchild);\nif (p->rchild) q.push(p->rchild);\n}\n}",
+          "score": null,
+          "maxScore": null,
+          "correct": null,
+          "submissionStatus": "",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "user",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "",
+            "answer": "",
+            "referenceCode": "",
+            "knowledgePoints": [],
+            "complexity": {
+              "time": "",
+              "space": ""
+            },
+            "model": "",
+            "skillId": "",
+            "skillVersion": "",
+            "generatedAt": 0,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": []
+      },
+      "demo-ds-105": {
+        "id": "demo-ds-105",
+        "problemId": "demo-ds-105",
+        "problemSetId": "demo-ds",
+        "problemSetName": "数据结构 2026 秋",
+        "host": "sduwh.pintia.cn",
+        "url": "https://sduwh.pintia.cn/problem-sets/demo/problems/demo-ds-105",
+        "title": "3-5 比较顺序表和链表的优缺点",
+        "label": "3-5",
+        "type": "short_answer",
+        "folderIds": [
+          "folder-exam"
+        ],
+        "tags": [
+          "简答题",
+          "复习"
+        ],
+        "note": "从存储、随机访问、插入删除和空间开销四个角度比较。",
+        "status": "todo",
+        "createdAt": 1789272000000,
+        "updatedAt": 1789272000000,
+        "content": {
+          "status": "missing",
+          "capturedAt": 0,
+          "contentHash": "",
+          "url": "",
+          "title": "",
+          "answerVisibility": "hidden"
+        },
+        "answer": {
+          "visibility": "hidden",
+          "officialAnswer": "",
+          "explanation": "",
+          "userAnswer": "",
+          "score": null,
+          "maxScore": null,
+          "correct": null,
+          "submissionStatus": "",
+          "submittedAt": 0,
+          "revealedAt": 0,
+          "source": "user",
+          "lastCheckedAt": 0,
+          "ai": {
+            "analysis": "简答题可以从顺序表和链表的存储结构差异展开。",
+            "answer": "顺序表支持随机访问，空间连续，但插入删除平均需要移动元素；链表插入删除方便，但需要额外指针空间，且不能随机访问。",
+            "referenceCode": "",
+            "knowledgePoints": [
+              "顺序表",
+              "链表",
+              "随机访问",
+              "插入删除"
+            ],
+            "complexity": {
+              "time": "按操作不同",
+              "space": "顺序表更紧凑"
+            },
+            "model": "demo-model",
+            "skillId": "knowledge-points",
+            "skillVersion": "",
+            "generatedAt": 1789272003000,
+            "basedOnSnapshotHash": "",
+            "reviewedByUser": false
+          }
+        },
+        "submissions": []
+      }
+    }
+  },
+  "folders": {
+    "default": {
+      "id": "default",
+      "name": "默认收藏夹",
+      "parentId": null,
+      "system": true,
+      "createdAt": 1789272000000,
+      "updatedAt": 1789272000000,
+      "bookmarkIds": []
+    },
+    "folder-ds": {
+      "id": "folder-ds",
+      "name": "数据结构复习",
+      "parentId": null,
+      "system": false,
+      "createdAt": 1789272000000,
+      "updatedAt": 1789272000000,
+      "bookmarkIds": [
+        "demo-ds-101",
+        "demo-ds-102",
+        "demo-ds-103",
+        "demo-ds-104"
+      ]
+    },
+    "folder-algo": {
+      "id": "folder-algo",
+      "name": "算法专题",
+      "parentId": null,
+      "system": false,
+      "createdAt": 1789272000000,
+      "updatedAt": 1789272000000,
+      "bookmarkIds": [
+        "demo-algo-201",
+        "demo-algo-202"
+      ]
+    },
+    "folder-exam": {
+      "id": "folder-exam",
+      "name": "期末冲刺",
+      "parentId": null,
+      "system": false,
+      "createdAt": 1789272000000,
+      "updatedAt": 1789272000000,
+      "bookmarkIds": [
+        "demo-ds-101",
+        "demo-ds-104",
+        "demo-ds-105"
+      ]
+    }
+  },
+  "memberships": {
+    "default": [],
+    "folder-ds": [
+      "demo-ds-101",
+      "demo-ds-102",
+      "demo-ds-103",
+      "demo-ds-104"
+    ],
+    "folder-algo": [
+      "demo-algo-201",
+      "demo-algo-202"
+    ],
+    "folder-exam": [
+      "demo-ds-101",
+      "demo-ds-104",
+      "demo-ds-105"
+    ]
+  },
+  "snapshots": {
+    "demo-ds-101": {
+      "bookmarkId": "demo-ds-101",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-101",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-101",
+      "capturedFromProblemId": "demo-ds-101",
+      "title": "2-1 顺序表插入操作的平均时间复杂度",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">2-1 顺序表插入操作的平均时间复杂度</h1>\n  <div class=\"demo-meta\">单选题 · 5 分 · 数据结构 2026 秋</div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>在长度为 n 的顺序表中，等概率地在任意合法位置插入一个元素，平均需要移动多少个元素？</p></div>\n  <div class=\"demo-options\">\n    <div class=\"demo-option\"><input type=\"radio\" name=\"demo-choice-1\" value=\"A\" disabled> <span>A. O(1)</span></div>\n    <div class=\"demo-option selected\"><input type=\"radio\" name=\"demo-choice-1\" value=\"B\" checked disabled> <span>B. O(n)</span></div>\n    <div class=\"demo-option\"><input type=\"radio\" name=\"demo-choice-1\" value=\"C\" disabled> <span>C. O(log n)</span></div>\n    <div class=\"demo-option\"><input type=\"radio\" name=\"demo-choice-1\" value=\"D\" disabled> <span>D. O(n²)</span></div>\n  </div>\n  <div class=\"demo-section\"><h3>答案与解析</h3><div class=\"demo-callout\">正确答案：B。平均移动次数约为 n/2，因此时间复杂度为 O(n)。</div></div>\n</div>",
+      "markdown": "单选题：顺序表插入操作的平均时间复杂度。正确答案 B，时间复杂度 O(n)。",
+      "text": "单选题：顺序表插入操作的平均时间复杂度。正确答案 B，时间复杂度 O(n)。",
+      "answers": [
+        {
+          "kind": "radio",
+          "prompt": "顺序表插入操作的平均时间复杂度",
+          "answer": "B"
+        }
+      ],
+      "choiceGroups": [
+        {
+          "name": "demo-choice-1",
+          "kind": "radio",
+          "prompt": "顺序表插入操作的平均时间复杂度",
+          "options": [
+            {
+              "value": "on",
+              "answer": "A",
+              "label": "A. O(1)",
+              "checked": false
+            },
+            {
+              "value": "on",
+              "answer": "B",
+              "label": "B. O(n)",
+              "checked": true
+            },
+            {
+              "value": "on",
+              "answer": "C",
+              "label": "C. O(log n)",
+              "checked": false
+            },
+            {
+              "value": "on",
+              "answer": "D",
+              "label": "D. O(n²)",
+              "checked": false
+            }
+          ]
+        }
+      ],
+      "codeDraft": "",
+      "submissionDraft": null,
+      "localCode": "",
+      "localAnswers": [
+        {
+          "kind": "radio",
+          "prompt": "顺序表插入操作的平均时间复杂度",
+          "answer": "B"
+        }
+      ],
+      "judgeConstraints": {
+        "codeLengthLimit": "",
+        "timeLimit": "",
+        "memoryLimit": "",
+        "stackLimit": ""
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "revealed",
+      "officialAnswerExcerpt": "B",
+      "explanationExcerpt": "平均移动 n/2 个元素，时间复杂度 O(n)。",
+      "contentHash": "demo-demo-ds-101",
+      "appVersion": "0.36.4"
+    },
+    "demo-ds-102": {
+      "bookmarkId": "demo-ds-102",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-102",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-102",
+      "capturedFromProblemId": "demo-ds-102",
+      "title": "2-2 循环队列判断队满的条件",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">2-2 循环队列判断队满的条件</h1>\n  <div class=\"demo-meta\">判断题 · 5 分 · 数据结构 2026 秋</div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>在循环队列中，只要队尾指针追上队头指针，就表示队列一定已满。</p></div>\n  <div class=\"demo-options\">\n    <div class=\"demo-option selected\"><input type=\"radio\" name=\"demo-judge-1\" value=\"true\" checked disabled> <span>正确</span></div>\n    <div class=\"demo-option\"><input type=\"radio\" name=\"demo-judge-1\" value=\"false\" disabled> <span>错误</span></div>\n  </div>\n  <div class=\"demo-note\">当前题目仅公布部分成绩，具体答案未公布。PTA-Pro 会保留题面和你的答案，稍后可继续复习。</div>\n</div>",
+      "markdown": "判断题：循环队列判断队满的条件。用户选择正确，PTA 部分成绩 3/5。",
+      "text": "判断题：循环队列判断队满的条件。用户选择正确，PTA 部分成绩 3/5。",
+      "answers": [
+        {
+          "kind": "radio",
+          "prompt": "循环队列判断队满的条件",
+          "answer": "true"
+        }
+      ],
+      "choiceGroups": [
+        {
+          "name": "demo-judge-1",
+          "kind": "radio",
+          "prompt": "循环队列判断队满的条件",
+          "options": [
+            {
+              "value": "true",
+              "answer": "true",
+              "label": "正确",
+              "checked": true
+            },
+            {
+              "value": "false",
+              "answer": "false",
+              "label": "错误",
+              "checked": false
+            }
+          ]
+        }
+      ],
+      "codeDraft": "",
+      "submissionDraft": null,
+      "localCode": "",
+      "localAnswers": [
+        {
+          "kind": "radio",
+          "prompt": "循环队列判断队满的条件",
+          "answer": "true"
+        }
+      ],
+      "judgeConstraints": {
+        "codeLengthLimit": "",
+        "timeLimit": "",
+        "memoryLimit": "",
+        "stackLimit": ""
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "score-only",
+      "officialAnswerExcerpt": "",
+      "explanationExcerpt": "",
+      "contentHash": "demo-demo-ds-102",
+      "appVersion": "0.36.4"
+    },
+    "demo-ds-103": {
+      "bookmarkId": "demo-ds-103",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-103",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-103",
+      "capturedFromProblemId": "demo-ds-103",
+      "title": "2-3 单链表查找第 i 个结点的时间复杂度",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">2-3 单链表查找第 i 个结点的时间复杂度</h1>\n  <div class=\"demo-meta\">填空题 · 4 分 · 数据结构 2026 秋</div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>在长度为 n 的单链表中查找第 i 个结点，时间复杂度为 <span style=\"display:inline-block;min-width:90px;border-bottom:1px solid #718096\">________</span>。</p></div>\n  <div class=\"demo-section\"><h3>题目提示</h3><div class=\"demo-note\">单链表只能从头结点开始顺序访问，不能像顺序表一样随机定位。</div></div>\n</div>",
+      "markdown": "填空题：单链表查找第 i 个结点的时间复杂度。用户答案 O(n)，参考答案 O(n)。",
+      "text": "填空题：单链表查找第 i 个结点的时间复杂度。用户答案 O(n)，参考答案 O(n)。",
+      "answers": [
+        {
+          "kind": "text",
+          "prompt": "时间复杂度",
+          "answer": "O(n)"
+        }
+      ],
+      "choiceGroups": [],
+      "codeDraft": "",
+      "submissionDraft": null,
+      "localCode": "",
+      "localAnswers": [
+        {
+          "kind": "text",
+          "prompt": "时间复杂度",
+          "answer": "O(n)"
+        }
+      ],
+      "judgeConstraints": {
+        "codeLengthLimit": "",
+        "timeLimit": "",
+        "memoryLimit": "",
+        "stackLimit": ""
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "revealed",
+      "officialAnswerExcerpt": "O(n)",
+      "explanationExcerpt": "单链表需要从头结点顺序查找。",
+      "contentHash": "demo-demo-ds-103",
+      "appVersion": "0.36.4"
+    },
+    "demo-ds-104": {
+      "bookmarkId": "demo-ds-104",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-104",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-ds-104",
+      "capturedFromProblemId": "demo-ds-104",
+      "title": "6-5 顺序表区间元素删除",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">6-5 顺序表区间元素删除</h1>\n  <div class=\"demo-meta\">函数题 · 25 分 · 数据结构 2026 秋</div>\n  <div class=\"demo-section\"><h3>函数接口定义</h3><pre class=\"demo-code\">void DeleteRange(SqList &amp;L, int x, int y);</pre></div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>从顺序表 L 中删除所有值位于闭区间 [x, y] 内的元素，并要求保持剩余元素的相对顺序。</p></div>\n  <div class=\"demo-section\"><h3>输入样例</h3><div class=\"demo-sample\">5\n1 2 3 4 5\n2 4</div></div>\n  <div class=\"demo-section\"><h3>输出样例</h3><div class=\"demo-sample\">1 5</div></div>\n</div>",
+      "markdown": "函数题：顺序表区间元素删除，保存 AC 提交、测试点、编译器和代码。",
+      "text": "函数题：顺序表区间元素删除，保存 AC 提交、测试点、编译器和代码。",
+      "answers": [],
+      "choiceGroups": [],
+      "codeDraft": "void DeleteRange(SqList &L, int x, int y) {\n    int k = 0;\n    for (int i = 0; i < L.length; ++i) {\n        if (L.elem[i] < x || L.elem[i] > y) {\n            L.elem[k++] = L.elem[i];\n        }\n    }\n    L.length = k;\n}",
+      "submissionDraft": {
+        "code": "void DeleteRange(SqList &L, int x, int y) {\n    int k = 0;\n    for (int i = 0; i < L.length; ++i) {\n        if (L.elem[i] < x || L.elem[i] > y) {\n            L.elem[k++] = L.elem[i];\n        }\n    }\n    L.length = k;\n}",
+        "language": "C++ (g++)"
+      },
+      "localCode": "void DeleteRange(SqList &L, int x, int y) {\n    int k = 0;\n    for (int i = 0; i < L.length; ++i) {\n        if (L.elem[i] < x || L.elem[i] > y) {\n            L.elem[k++] = L.elem[i];\n        }\n    }\n    L.length = k;\n}",
+      "judgeConstraints": {
+        "codeLengthLimit": "16 KB",
+        "timeLimit": "400 ms",
+        "memoryLimit": "64 MB",
+        "stackLimit": "8192 KB"
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "revealed",
+      "officialAnswerExcerpt": "使用写指针压缩保留元素。",
+      "explanationExcerpt": "时间复杂度 O(n)，空间复杂度 O(1)。",
+      "contentHash": "demo-demo-ds-104",
+      "appVersion": "0.36.4"
+    },
+    "demo-algo-201": {
+      "bookmarkId": "demo-algo-201",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-algo-201",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-algo-201",
+      "capturedFromProblemId": "demo-algo-201",
+      "title": "7-1 括号匹配",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">7-1 括号匹配</h1>\n  <div class=\"demo-meta\">编程题 · 100 分 · 算法基础练习</div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>给定只包含 <code>()[]{}</code> 的字符串，判断括号是否匹配。空字符串视为匹配。</p></div>\n  <div class=\"demo-section\"><h3>输入样例</h3><div class=\"demo-sample\">{[()]}</div></div>\n  <div class=\"demo-section\"><h3>输出样例</h3><div class=\"demo-sample\">YES</div></div>\n</div>",
+      "markdown": "编程题：括号匹配，保存 WA 提交和测试点详情，演示“我的作答”和 PTA 评测详情。",
+      "text": "编程题：括号匹配，保存 WA 提交和测试点详情，演示“我的作答”和 PTA 评测详情。",
+      "answers": [],
+      "choiceGroups": [],
+      "codeDraft": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\n    string s;\n    cin >> s;\n    stack<char> st;\n    for (char c : s) {\n        if (c == '(' || c == '[' || c == '{') st.push(c);\n        else {\n            if (st.empty()) { cout << \"NO\"; return 0; }\n            char t = st.top(); st.pop();\n            if ((c == ')' && t != '(') || (c == ']' && t != '[') || (c == '}' && t != '{')) {\n                cout << \"NO\"; return 0;\n            }\n        }\n    }\n    cout << (st.empty() ? \"YES\" : \"NO\");\n    return 0;\n}",
+      "submissionDraft": {
+        "code": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\n    string s;\n    cin >> s;\n    stack<char> st;\n    for (char c : s) {\n        if (c == '(' || c == '[' || c == '{') st.push(c);\n        else {\n            if (st.empty()) { cout << \"NO\"; return 0; }\n            char t = st.top(); st.pop();\n            if ((c == ')' && t != '(') || (c == ']' && t != '[') || (c == '}' && t != '{')) {\n                cout << \"NO\"; return 0;\n            }\n        }\n    }\n    cout << (st.empty() ? \"YES\" : \"NO\");\n    return 0;\n}",
+        "language": "C++ (g++)"
+      },
+      "localCode": "",
+      "judgeConstraints": {
+        "codeLengthLimit": "16 KB",
+        "timeLimit": "400 ms",
+        "memoryLimit": "64 MB",
+        "stackLimit": "8192 KB"
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "hidden",
+      "officialAnswerExcerpt": "",
+      "explanationExcerpt": "",
+      "contentHash": "demo-demo-algo-201",
+      "appVersion": "0.36.4"
+    },
+    "demo-algo-202": {
+      "bookmarkId": "demo-algo-202",
+      "capturedAt": 1789272001000,
+      "url": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-algo-202",
+      "capturedFromUrl": "https://sduwh.pintia.cn/problem-sets/demo/exam/problems/type/2?problemSetProblemId=demo-algo-202",
+      "capturedFromProblemId": "demo-algo-202",
+      "title": "7-2 二叉树层序遍历",
+      "html": "<div class=\"demo-problem\"><div class=\"demo-meta\">PTA-Pro 功能演示数据 · 数据结构 2026 秋</div>\n  <h1 class=\"demo-title\">7-2 二叉树层序遍历</h1>\n  <div class=\"demo-meta\">编程题 · 100 分 · 算法基础练习</div>\n  <div class=\"demo-section\"><h3>题目描述</h3><p>按层从上到下、从左到右输出二叉树的每个结点。请使用队列实现。</p></div>\n  <div class=\"demo-section\"><h3>代码草稿</h3><pre class=\"demo-code\">void LevelOrder(BiTree T) {\n    if (!T) return;\n    queue&lt;BiTree> q;\n    q.push(T);\n    while (!q.empty()) {\n        BiTree p = q.front(); q.pop();\n        cout &lt;&lt; p->data &lt;&lt; ' ';\n        if (p->lchild) q.push(p->lchild);\n        if (p->rchild) q.push(p->rchild);\n    }\n}</pre></div>\n  <div class=\"demo-note\">尚未提交到 PTA。PTA-Pro 可以在本地保存这份代码草稿，稍后继续编辑。</div>\n</div>",
+      "markdown": "编程题：二叉树层序遍历，尚未提交，展示本地代码草稿。",
+      "text": "编程题：二叉树层序遍历，尚未提交，展示本地代码草稿。",
+      "answers": [],
+      "choiceGroups": [],
+      "codeDraft": "void LevelOrder(BiTree T) {\n    if (!T) return;\n    queue<BiTree> q;\n    q.push(T);\n    while (!q.empty()) {\n        BiTree p = q.front(); q.pop();\n        cout << p->data << ' ';\n        if (p->lchild) q.push(p->lchild);\n        if (p->rchild) q.push(p->rchild);\n    }\n}",
+      "submissionDraft": {
+        "code": "void LevelOrder(BiTree T) {\n    if (!T) return;\n    queue<BiTree> q;\n    q.push(T);\n    while (!q.empty()) {\n        BiTree p = q.front(); q.pop();\n        cout << p->data << ' ';\n        if (p->lchild) q.push(p->lchild);\n        if (p->rchild) q.push(p->rchild);\n    }\n}",
+        "language": "C++ (g++)"
+      },
+      "localCode": "void LevelOrder(BiTree T) {\n    if (!T) return;\n    queue<BiTree> q;\n    q.push(T);\n    while (!q.empty()) {\n        BiTree p = q.front(); q.pop();\n        cout << p->data << ' ';\n        if (p->lchild) q.push(p->lchild);\n        if (p->rchild) q.push(p->rchild);\n    }\n}",
+      "judgeConstraints": {
+        "codeLengthLimit": "16 KB",
+        "timeLimit": "400 ms",
+        "memoryLimit": "64 MB",
+        "stackLimit": "8192 KB"
+      },
+      "pageStyles": {
+        "baseUrl": "https://sduwh.pintia.cn/",
+        "hrefs": [],
+        "inline": [
+          "\nbody { margin: 0; padding: 0; background: #f5f7fb; color: #20324a; font: 15px/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif; }\n.demo-problem { max-width: 920px; margin: 0 auto; padding: 26px 34px 42px; background: #fff; min-height: 100vh; box-sizing: border-box; }\n.demo-title { margin: 0 0 8px; color: #13233a; font-size: 24px; line-height: 1.35; }\n.demo-meta { margin-bottom: 24px; color: #718096; font-size: 13px; }\n.demo-section { margin: 22px 0; }\n.demo-section h3 { margin: 0 0 8px; color: #16263d; font-size: 16px; }\n.demo-note { padding: 10px 12px; color: #53657a; background: #f8fafc; border-left: 4px solid #8bb9ef; border-radius: 6px; }\n.demo-code { overflow: auto; padding: 13px 15px; color: #dbe9ff; background: #101a2d; border-radius: 8px; font: 14px/1.7 Consolas, Monaco, monospace; white-space: pre; }\n.demo-options { display: grid; gap: 8px; margin-top: 8px; }\n.demo-option { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #dbe4ef; border-radius: 8px; }\n.demo-option.selected { background: #eef6ff; border-color: #8bb9ef; }\n.demo-sample { padding: 11px 13px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: Consolas, Monaco, monospace; white-space: pre-wrap; }\n.demo-table { width: 100%; border-collapse: collapse; }\n.demo-table th, .demo-table td { padding: 8px 9px; border: 1px solid #dbe4ef; text-align: left; }\n.demo-table th { background: #f1f5f9; }\n.demo-callout { margin: 10px 0; padding: 10px 12px; color: #8a5a00; background: #fff7e6; border: 1px solid #f3d49a; border-radius: 8px; }\n"
+        ]
+      },
+      "snapshotVersion": 2,
+      "answerVisibility": "hidden",
+      "officialAnswerExcerpt": "",
+      "explanationExcerpt": "",
+      "contentHash": "demo-demo-algo-202",
+      "appVersion": "0.36.4"
+    }
+  }
+}
