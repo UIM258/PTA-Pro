@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "analyze-problem",
+      "persist": true,
+      "entryPoints": ["card", "snapshot", "manage"],
+      "usesLocalEdits": true,
+      "target": "answer.ai.analysis"
+    },
+    {
+      "id": "reference-solution",
+      "persist": true,
+      "entryPoints": ["card", "snapshot", "manage"],
+      "usesLocalEdits": true,
+      "target": "answer.ai.answer"
+    },
+    {
+      "id": "knowledge-points",
+      "persist": true,
+      "entryPoints": ["card", "snapshot", "manage"],
+      "usesLocalEdits": false,
+      "target": "answer.ai.knowledgePoints"
+    },
+    {
+      "id": "review-my-code",
+      "persist": false,
+      "entryPoints": ["card", "snapshot"],
+      "usesLocalEdits": true,
+      "target": "ephemeral"
+    },
+    {
+      "id": "hint-progression",
+      "persist": false,
+      "entryPoints": ["card", "snapshot"],
+      "usesLocalEdits": true,
+      "target": "ephemeral"
+    },
+    {
+      "id": "debug-compile-error",
+      "persist": false,
+      "entryPoints": ["card", "snapshot"],
+      "usesLocalEdits": true,
+      "target": "ephemeral"
+    },
+    {
+      "id": "generate-edge-cases",
+      "persist": false,
+      "entryPoints": ["card", "snapshot"],
+      "usesLocalEdits": true,
+      "target": "ephemeral"
+    }
+  ]
+}

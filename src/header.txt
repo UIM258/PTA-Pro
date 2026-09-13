@@ -1,0 +1,57 @@
+// ==UserScript==
+// @name         PTA 收藏夹
+// @name:zh-CN   PTA 收藏夹
+// @namespace    https://github.com/UIM258/PTA-Pro
+// @version      0.36.0
+// @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
+// @author       UIM258
+// @homepageURL  https://github.com/UIM258/PTA-Pro
+// @supportURL   https://github.com/UIM258/PTA-Pro/issues
+// @license      MIT
+// @match        https://*.pintia.cn/*
+// @match        https://pintia.cn/*
+// @match        http://*.pintia.cn/*
+// @match        http://pintia.cn/*
+// @icon         https://static.pintia.cn/sparkling-daydream/icons/default/favicon.ico
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_deleteValue
+// @grant        GM_xmlhttpRequest
+// @grant        GM_registerMenuCommand
+// @run-at       document-idle
+// @connect      *
+// @noframes
+// ==/UserScript==
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
