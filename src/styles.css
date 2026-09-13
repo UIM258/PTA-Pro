@@ -1642,3 +1642,38 @@ button {
   font-size: 12px;
   line-height: 1.65;
 }
+.ptaf-update-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 12px 0;
+}
+
+.ptaf-update-status {
+  flex: 1;
+  min-width: 148px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+
+.ptaf-update-status.is-new {
+  color: #b06a00;
+  font-weight: 650;
+}
+
+.ptaf-update-status.is-current {
+  color: var(--ptaf-success);
+}
+
+.ptaf-update-status.is-error {
+  color: var(--ptaf-danger);
+}
+
+:host(.is-night) .ptaf-update-status.is-new {
+  color: #f2cf7b;
+}
+
+:host(.is-night) .ptaf-update-status.is-current {
+  color: #83d9b5;
+}

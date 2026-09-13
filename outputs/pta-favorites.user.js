@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.8
+// @version      0.36.9
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.8';
+  const APP_VERSION = '0.36.9';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -1219,6 +1219,45 @@
       if (!response.ok) throw new Error(data.error && data.error.message ? data.error.message : `HTTP ${response.status}`);
       return Array.from(new Set((data.data || data.models || []).map((item) => typeof item === 'string' ? item : item.id || item.name).filter(Boolean)));
     });
+  }
+
+  function requestTextUrl(url, timeoutMs) {
+    if (typeof GM_xmlhttpRequest === 'function') {
+      return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url,
+          timeout: Number(timeoutMs) || 15000,
+          onload: (response) => {
+            if (response.status < 200 || response.status >= 300) {
+              reject(new Error(`HTTP ${response.status}`));
+              return;
+            }
+            resolve(String(response.responseText || ''));
+          },
+          onerror: () => reject(new Error('网络请求失败')),
+          ontimeout: () => reject(new Error('网络请求超时')),
+        });
+      });
+    }
+    return fetch(url, { cache: 'no-store' }).then(async (response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.text();
+    });
+  }
+
+  function versionParts(value) {
+    const parts = String(value || '').match(/\d+/g);
+    return parts ? parts.slice(0, 3).map(Number) : [0, 0, 0];
+  }
+
+  function compareVersions(left, right) {
+    const a = versionParts(left);
+    const b = versionParts(right);
+    for (let index = 0; index < 3; index += 1) {
+      if (a[index] !== b[index]) return a[index] > b[index] ? 1 : -1;
+    }
+    return 0;
   }
 
   function requestAiCompletion(action, contextText, options) {
@@ -4267,6 +4306,41 @@ button {
   font-size: 12px;
   line-height: 1.65;
 }
+.ptaf-update-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 12px 0;
+}
+
+.ptaf-update-status {
+  flex: 1;
+  min-width: 148px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+
+.ptaf-update-status.is-new {
+  color: #b06a00;
+  font-weight: 650;
+}
+
+.ptaf-update-status.is-current {
+  color: var(--ptaf-success);
+}
+
+.ptaf-update-status.is-error {
+  color: var(--ptaf-danger);
+}
+
+:host(.is-night) .ptaf-update-status.is-new {
+  color: #f2cf7b;
+}
+
+:host(.is-night) .ptaf-update-status.is-current {
+  color: #83d9b5;
+}
 `;
       this.shadow.appendChild(styles);
 
@@ -4432,6 +4506,11 @@ button {
                 ${PROJECT_LINKS.greasyfork ? `<a class="ptaf-btn" href="${PROJECT_LINKS.greasyfork}" target="_blank" rel="noopener noreferrer">GreasyFork</a>` : '<span class="ptaf-about-pending">GreasyFork 发布后补充</span>'}
                 <a class="ptaf-btn" href="${PROJECT_LINKS.issues}" target="_blank" rel="noopener noreferrer">问题反馈</a>
               </div>
+              <div class="ptaf-update-row">
+                <button class="ptaf-btn" id="ptafCheckUpdate" type="button">检查更新</button>
+                <span class="ptaf-update-status" id="ptafUpdateStatus">当前版本 v${APP_VERSION}</span>
+                <a class="ptaf-btn small" id="ptafUpdateLink" href="${PROJECT_LINKS.script}" target="_blank" rel="noopener noreferrer" hidden>更新脚本</a>
+              </div>
               <div class="ptaf-about-note">收藏、快照和设置默认仅保存在本地浏览器。请遵守 PTA 及所在学校的使用规范。</div>
               <button class="ptaf-btn ptaf-sponsor-toggle" id="ptafSponsorToggle" type="button">请我喝杯茶</button>
               <div class="ptaf-sponsor-panel" id="ptafSponsorPanel" hidden>
@@ -4476,6 +4555,7 @@ button {
       this.shadow.getElementById('ptafShortcutSettings').addEventListener('click', () => this.openShortcutSettings());
       this.shadow.getElementById('ptafNightMode').addEventListener('click', () => this.toggleNightMode());
       this.shadow.getElementById('ptafAbout').addEventListener('click', () => this.openModal('about'));
+      this.shadow.getElementById('ptafCheckUpdate').addEventListener('click', () => this.checkForUpdates());
       this.shadow.getElementById('ptafSponsorToggle').addEventListener('click', () => this.toggleSponsorPanel());
       this.shadow.getElementById('ptafAiSettings').addEventListener('click', () => this.openAiSettings());
       this.shadow.getElementById('ptafSnapshotAi').addEventListener('click', () => this.openAiPanel(this.currentSnapshotId));
@@ -5082,6 +5162,39 @@ button {
       this.store.save(true);
       this.applyNightMode(true);
       this.toast(enabled ? '已开启夜间模式' : '已关闭夜间模式');
+    }
+
+    async checkForUpdates() {
+      const button = this.shadow.getElementById('ptafCheckUpdate');
+      const status = this.shadow.getElementById('ptafUpdateStatus');
+      const link = this.shadow.getElementById('ptafUpdateLink');
+      if (!button || !status || !link) return;
+      button.disabled = true;
+      button.textContent = '检查中...';
+      status.className = 'ptaf-update-status';
+      status.textContent = '正在检查更新...';
+      link.hidden = true;
+      try {
+        const source = await requestTextUrl(PROJECT_LINKS.script, 15000);
+        const match = source.match(/^\/\/\s*@version\s+([^\s]+)/m);
+        if (!match) throw new Error('无法读取远程版本号');
+        const latestVersion = match[1].trim();
+        if (compareVersions(latestVersion, APP_VERSION) > 0) {
+          status.className = 'ptaf-update-status is-new';
+          status.textContent = `发现新版本 v${latestVersion}`;
+          link.hidden = false;
+        } else {
+          status.className = 'ptaf-update-status is-current';
+          status.textContent = '已是最新版本';
+        }
+      } catch (error) {
+        warn('检查更新失败', error);
+        status.className = 'ptaf-update-status is-error';
+        status.textContent = '检查更新失败，请稍后重试';
+      } finally {
+        button.disabled = false;
+        button.textContent = '检查更新';
+      }
     }
 
     toggleSponsorPanel() {
