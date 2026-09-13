@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.1
+
+- 增加 About 入口，显示 GitHub、GreasyFork、脚本安装和问题反馈地址。
+
+- GitHub 仓库和 GreasyFork 正式发布。
+
 ## 0.36.0
 
 - 保存的 AI 解析支持按题意解析、参考答案、参考代码、知识点和复杂度分段删除。

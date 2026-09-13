@@ -19,7 +19,7 @@ const output = [
   core,
   '',
   '/* PTA page integration and UI. */',
-  app.replace('__PTAF_STYLES__', JSON.stringify(styles)),
+  app.replace('__PTAF_STYLES__', '`\n' + styles + '\n`'),
   '',
 ].join('\n');
 

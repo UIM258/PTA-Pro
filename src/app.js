@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.0';
+  const APP_VERSION = '0.36.1';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -24,7 +24,7 @@
     repository: 'https://github.com/UIM258/PTA-Pro',
     script: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js',
     issues: 'https://github.com/UIM258/PTA-Pro/issues',
-    greasyfork: '',
+    greasyfork: 'https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9',
   };
   const AI_PROVIDERS = {
     '': { label: '自定义', baseUrl: '' },

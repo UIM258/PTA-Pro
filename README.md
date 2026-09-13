@@ -59,7 +59,7 @@ PTA-Pro 是项目名，实际安装的油猴脚本名为 **PTA 收藏夹**。脚
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 或其他兼容的用户脚本管理器。
-2. 从 GreasyFork 安装（发布后补充链接）。
+2. 从 [GreasyFork](https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9) 安装。
 3. 或从 GitHub 安装：
 
 ```text

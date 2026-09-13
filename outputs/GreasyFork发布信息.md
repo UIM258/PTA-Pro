@@ -22,6 +22,8 @@ PTA-Pro：一个面向 PTA（拼题A）的收藏夹油猴脚本，支持题目�
 
 GitHub：https://github.com/UIM258/PTA-Pro
 
+GreasyFork：https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9
+
 ## 脚本安装地址
 
 GitHub Raw：https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js
