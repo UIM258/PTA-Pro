@@ -178,8 +178,8 @@ build.mjs    构建脚本
 
 ## 请我喝杯茶
 
-如果 PTA-Pro 对你有帮助，可以请作者喝杯茶。感谢你的支持。
+如果 PTA-Pro 对你有帮助，可以请我喝杯茶。感谢你的支持。
 
 <p align="center">
-  <img src="docs/assets/sponsor-qr.jpg" alt="请我喝杯茶赞赏码" width="320">
+  <img src="docs/assets/sponsor-qr.jpg" alt="感谢支持" width="320">
 </p>
