@@ -1624,3 +1624,11 @@ button {
   background: #111c31;
   border-color: var(--ptaf-border);
 }
+.ptaf-ai-guidance {
+  min-height: 72px;
+  margin: 5px 0 5px;
+}
+
+.ptaf-ai-guidance + .ptaf-card-meta {
+  margin-bottom: 9px;
+}

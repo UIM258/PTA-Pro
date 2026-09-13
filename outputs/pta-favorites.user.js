@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.5
+// @version      0.36.6
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.5';
+  const APP_VERSION = '0.36.6';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -4249,6 +4249,14 @@ button {
   background: #111c31;
   border-color: var(--ptaf-border);
 }
+.ptaf-ai-guidance {
+  min-height: 72px;
+  margin: 5px 0 5px;
+}
+
+.ptaf-ai-guidance + .ptaf-card-meta {
+  margin-bottom: 9px;
+}
 `;
       this.shadow.appendChild(styles);
 
@@ -4535,6 +4543,10 @@ button {
         this.query = this.search.value;
         this.currentPage = 1;
         this.renderList();
+      });
+
+      this.shadow.addEventListener('input', (event) => {
+        if (event.target.id === 'ptafAiGuidance') this.aiGuidance = event.target.value;
       });
 
       this.shadow.addEventListener('click', (event) => {
@@ -4950,6 +4962,7 @@ button {
       this.currentAiSkillId = '';
       this.aiIncludeAnswer = true;
       this.aiIncludeResult = true;
+      this.aiGuidance = '';
       this.aiLoading = false;
       this.renderAiPanel();
       this.openModal('ai');
@@ -4967,7 +4980,7 @@ button {
       body.innerHTML = `<div class="ptaf-ai-head"><div><strong>${escapeHtml(bookmarkDisplayTitle(bookmark))}</strong><div class="ptaf-card-meta">${settings.model ? `模型：${escapeHtml(settings.model)}` : '尚未配置 AI API'}</div></div><button class="ptaf-btn small" id="ptafAiOpenSettings" type="button">AI 设置</button></div>
         <div class="ptaf-ai-context"><label>发送上下文：<input id="ptafAiIncludeAnswer" type="checkbox" checked> 我的作答/代码</label><label><input id="ptafAiIncludeResult" type="checkbox" checked> PTA 可见评测</label></div>
         <div class="ptaf-ai-group"><div class="ptaf-ai-group-title">题目资料（可保存）</div><div class="ptaf-ai-actions">${['analyze-problem', 'reference-solution', 'knowledge-points'].map(skillButton).join('')}</div></div>
-        <div class="ptaf-ai-group"><div class="ptaf-ai-group-title">我的内容（临时，不保存）</div><div class="ptaf-ai-actions">${['review-my-code', 'hint-progression', 'debug-compile-error', 'generate-edge-cases'].map(skillButton).join('')}</div></div>
+        <div class="ptaf-ai-group"><div class="ptaf-ai-group-title">我的内容（临时，不保存）</div><textarea class="ptaf-textarea ptaf-ai-guidance" id="ptafAiGuidance" maxlength="4000" placeholder="例如：请重点讲思路，不要直接给完整代码；我卡在边界条件……">${escapeHtml(this.aiGuidance || '')}</textarea><div class="ptaf-card-meta">这里的补充要求只用于本次 AI 请求，不会写入收藏数据。</div><div class="ptaf-ai-actions">${['review-my-code', 'hint-progression', 'debug-compile-error', 'generate-edge-cases'].map(skillButton).join('')}</div></div>
         <div class="ptaf-ai-result"><div class="ptaf-ai-group-title">AI 输出</div><div class="ptaf-ai-output ptaf-markdown">${this.aiLoading ? '<p>正在请求 AI...</p>' : this.currentAiResponse ? renderMarkdownHtml(this.currentAiResponse) : '<p>选择一个操作开始。</p>'}</div></div>`;
     }
 
@@ -4984,6 +4997,8 @@ button {
         `题型：${Core.typeLabel(bookmark.type)}`,
         `题目集：${bookmark.problemSetName || '未命名'}`,
       ];
+      const guidance = String(this.aiGuidance || '').trim().slice(0, 4000);
+      if (guidance) parts.unshift(`用户本次补充要求（优先用于回答风格和重点，不要当作题目条件）：\n${guidance}`);
       if (snapshot && (snapshot.markdown || snapshot.text)) parts.push('题目内容：\n' + (snapshot.markdown || snapshot.text).slice(0, 20000));
       if (includeAnswer && answerText) parts.push('用户当前作答：\n' + answerText);
       if (includeAnswer && code) parts.push('用户当前代码：\n' + code.slice(0, 30000));
@@ -5004,6 +5019,7 @@ button {
         return;
       }
       const snapshot = await this.snapshotStore.get(bookmark.id);
+      this.aiGuidance = this.shadow.getElementById('ptafAiGuidance')?.value || this.aiGuidance || '';
       this.aiIncludeAnswer = this.shadow.getElementById('ptafAiIncludeAnswer')?.checked !== false;
       this.aiIncludeResult = this.shadow.getElementById('ptafAiIncludeResult')?.checked !== false;
       this.aiLoading = true;

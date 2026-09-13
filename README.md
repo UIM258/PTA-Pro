@@ -22,6 +22,10 @@ PTA-Pro 是项目名，实际安装的油猴脚本名为 **PTA 收藏夹**。脚
 
 ![AI 解析](docs/screenshots/04-ai-reference.png)
 
+### AI 补充要求输入框
+
+![AI 补充要求](docs/screenshots/08-ai-guidance.png)
+
 ### 按收藏夹选择性导出 JSON / Markdown
 
 ![导出](docs/screenshots/05-export.png)
@@ -79,6 +83,7 @@ PTA-Pro 是项目名，实际安装的油猴脚本名为 **PTA 收藏夹**。脚
 - 内置 OpenAI、DeepSeek、OpenRouter、阿里云百炼、Ollama、LM Studio 等预设。
 - 支持自动读取模型列表。
 - 可生成题意解析、参考答案、参考代码、知识点和复杂度。
+- “我的内容”支持输入本次补充要求，只用于当前 AI 请求，不保存。
 - 用户代码检查、提示、编译错误解释等临时内容默认不写入收藏数据。
 - 保存的 AI 内容支持 Markdown，并可分段删除。
 - 不自动提交代码，不访问 PTA 隐藏测试点。
