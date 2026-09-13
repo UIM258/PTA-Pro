@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.7';
+  const APP_VERSION = '0.36.8';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -3359,7 +3359,8 @@
       const body = this.shadow.getElementById('ptafExportFolderBody');
       const folders = Object.values(this.store.state.folders)
         .sort((a, b) => Number(b.system) - Number(a.system) || a.name.localeCompare(b.name, 'zh-CN'));
-      body.innerHTML = `      <div class="ptaf-export-folders">
+      body.innerHTML = `<div class="ptaf-export-note">不同 PTA 域名（例如 sduwh.pintia.cn 与 pintia.cn）的收藏数据互相独立。切换域名前请先在这里导出 JSON，再到新域名使用“导入 JSON”。</div>
+      <div class="ptaf-export-folders">
         <label class="ptaf-folder-choice"><input id="ptafExportSelectAll" type="checkbox" checked> <strong>全选</strong></label>
         ${folders.map((folder) => {
           const count = Object.values(this.store.state.bookmarks).filter((bookmark) => Core.isCollected(bookmark) && (bookmark.folderIds || []).includes(folder.id)).length;

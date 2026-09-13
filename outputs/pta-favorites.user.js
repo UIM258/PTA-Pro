@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.7
+// @version      0.36.8
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.7';
+  const APP_VERSION = '0.36.8';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -4257,6 +4257,16 @@ button {
 .ptaf-ai-guidance + .ptaf-card-meta {
   margin-bottom: 9px;
 }
+.ptaf-export-note {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  color: var(--ptaf-muted);
+  background: var(--ptaf-panel);
+  border: 1px solid var(--ptaf-border);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.65;
+}
 `;
       this.shadow.appendChild(styles);
 
@@ -6042,7 +6052,8 @@ button {
       const body = this.shadow.getElementById('ptafExportFolderBody');
       const folders = Object.values(this.store.state.folders)
         .sort((a, b) => Number(b.system) - Number(a.system) || a.name.localeCompare(b.name, 'zh-CN'));
-      body.innerHTML = `      <div class="ptaf-export-folders">
+      body.innerHTML = `<div class="ptaf-export-note">不同 PTA 域名（例如 sduwh.pintia.cn 与 pintia.cn）的收藏数据互相独立。切换域名前请先在这里导出 JSON，再到新域名使用“导入 JSON”。</div>
+      <div class="ptaf-export-folders">
         <label class="ptaf-folder-choice"><input id="ptafExportSelectAll" type="checkbox" checked> <strong>全选</strong></label>
         ${folders.map((folder) => {
           const count = Object.values(this.store.state.bookmarks).filter((bookmark) => Core.isCollected(bookmark) && (bookmark.folderIds || []).includes(folder.id)).length;

@@ -1632,3 +1632,13 @@ button {
 .ptaf-ai-guidance + .ptaf-card-meta {
   margin-bottom: 9px;
 }
+.ptaf-export-note {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  color: var(--ptaf-muted);
+  background: var(--ptaf-panel);
+  border: 1px solid var(--ptaf-border);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.65;
+}

@@ -149,6 +149,7 @@ https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user
 - 收藏、快照、设置和 AI 生成内容默认只保存在当前浏览器本地。
 - AI API Key 单独保存在本地，不会写入导出的 JSON 或 Markdown。
 - 使用 AI 功能时，脚本会把当前题目的必要上下文发送到你配置的 API 服务。
+- 不同 PTA 域名（例如 sduwh.pintia.cn 与 pintia.cn）的收藏数据互相独立；切换域名前先导出 JSON，再到新域名导入。
 - 换设备或清理浏览器数据前，请先导出 JSON 备份。
 - 导入 JSON 采用合并策略，不会直接覆盖已有备注。
 
