@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.6
+// @version      0.36.7
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.6';
+  const APP_VERSION = '0.36.7';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -5114,7 +5114,15 @@ button {
       return null;
     }
 
+    resetSponsorPanel() {
+      const panel = this.shadow && this.shadow.getElementById('ptafSponsorPanel');
+      const button = this.shadow && this.shadow.getElementById('ptafSponsorToggle');
+      if (panel) panel.hidden = true;
+      if (button) button.textContent = '请我喝杯茶';
+    }
+
     openModal(name) {
+      if (name === 'about') this.resetSponsorPanel();
       const modal = this.modalFor(name);
       if (modal) modal.classList.add('is-open');
     }
