@@ -1567,3 +1567,60 @@ button {
   background: linear-gradient(135deg, #2f83df, #15559c);
   box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
 }
+.ptaf-sponsor-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 12px;
+  color: #8a5200;
+  background: #fff7e6;
+  border-color: #efd39a;
+  font-weight: 650;
+}
+
+.ptaf-sponsor-toggle:hover {
+  color: #6d4000;
+  background: #fff1d6;
+  border-color: #e7c27d;
+}
+
+.ptaf-sponsor-panel {
+  margin-top: 10px;
+  padding: 12px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--ptaf-border);
+  border-radius: 9px;
+}
+
+.ptaf-sponsor-panel img {
+  display: block;
+  width: min(260px, 100%);
+  height: auto;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 9px;
+}
+
+.ptaf-sponsor-panel div {
+  margin-top: 8px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+
+:host(.is-night) .ptaf-sponsor-toggle {
+  color: #f3cc80;
+  background: #40331b;
+  border-color: #6d5520;
+}
+
+:host(.is-night) .ptaf-sponsor-toggle:hover {
+  color: #ffe1a3;
+  background: #4d3d20;
+  border-color: #8a6b2b;
+}
+
+:host(.is-night) .ptaf-sponsor-panel {
+  background: #111c31;
+  border-color: var(--ptaf-border);
+}

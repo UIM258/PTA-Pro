@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.5
+
+- About 最后新增请我喝杯茶按钮，可展开赞赏码。
+- README 最后新增赞赏码和支持作者说明。
+- README 安装区新增 AI Agent 协助安装提示词。
+
 ## 0.36.4
 
 - About 链接顺序调整为：安装脚本、GitHub 仓库、GreasyFork、问题反馈。

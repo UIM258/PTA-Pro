@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.4
+// @version      0.36.5
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.4';
+  const APP_VERSION = '0.36.5';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -1073,6 +1073,7 @@
     script: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js',
     issues: 'https://github.com/UIM258/PTA-Pro/issues',
     greasyfork: 'https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9',
+    sponsorQr: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/docs/assets/sponsor-qr.jpg',
   };
   const AI_PROVIDERS = {
     '': { label: '自定义', baseUrl: '' },
@@ -4191,6 +4192,63 @@ button {
   background: linear-gradient(135deg, #2f83df, #15559c);
   box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
 }
+.ptaf-sponsor-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 12px;
+  color: #8a5200;
+  background: #fff7e6;
+  border-color: #efd39a;
+  font-weight: 650;
+}
+
+.ptaf-sponsor-toggle:hover {
+  color: #6d4000;
+  background: #fff1d6;
+  border-color: #e7c27d;
+}
+
+.ptaf-sponsor-panel {
+  margin-top: 10px;
+  padding: 12px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--ptaf-border);
+  border-radius: 9px;
+}
+
+.ptaf-sponsor-panel img {
+  display: block;
+  width: min(260px, 100%);
+  height: auto;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 9px;
+}
+
+.ptaf-sponsor-panel div {
+  margin-top: 8px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+
+:host(.is-night) .ptaf-sponsor-toggle {
+  color: #f3cc80;
+  background: #40331b;
+  border-color: #6d5520;
+}
+
+:host(.is-night) .ptaf-sponsor-toggle:hover {
+  color: #ffe1a3;
+  background: #4d3d20;
+  border-color: #8a6b2b;
+}
+
+:host(.is-night) .ptaf-sponsor-panel {
+  background: #111c31;
+  border-color: var(--ptaf-border);
+}
 `;
       this.shadow.appendChild(styles);
 
@@ -4357,6 +4415,11 @@ button {
                 <a class="ptaf-btn" href="${PROJECT_LINKS.issues}" target="_blank" rel="noopener noreferrer">问题反馈</a>
               </div>
               <div class="ptaf-about-note">收藏、快照和设置默认仅保存在本地浏览器。请遵守 PTA 及所在学校的使用规范。</div>
+              <button class="ptaf-btn ptaf-sponsor-toggle" id="ptafSponsorToggle" type="button">请我喝杯茶</button>
+              <div class="ptaf-sponsor-panel" id="ptafSponsorPanel" hidden>
+                <img src="${PROJECT_LINKS.sponsorQr}" alt="赞赏码" loading="lazy">
+                <div>如果 PTA-Pro 对你有帮助，可以请作者喝杯茶。</div>
+              </div>
             </div>
           </section>
         </div>
@@ -4395,6 +4458,7 @@ button {
       this.shadow.getElementById('ptafShortcutSettings').addEventListener('click', () => this.openShortcutSettings());
       this.shadow.getElementById('ptafNightMode').addEventListener('click', () => this.toggleNightMode());
       this.shadow.getElementById('ptafAbout').addEventListener('click', () => this.openModal('about'));
+      this.shadow.getElementById('ptafSponsorToggle').addEventListener('click', () => this.toggleSponsorPanel());
       this.shadow.getElementById('ptafAiSettings').addEventListener('click', () => this.openAiSettings());
       this.shadow.getElementById('ptafSnapshotAi').addEventListener('click', () => this.openAiPanel(this.currentSnapshotId));
       this.shadow.getElementById('ptafAiSaveSettings').addEventListener('click', () => this.saveAiSettings());
@@ -4992,6 +5056,14 @@ button {
       this.store.save(true);
       this.applyNightMode(true);
       this.toast(enabled ? '已开启夜间模式' : '已关闭夜间模式');
+    }
+
+    toggleSponsorPanel() {
+      const panel = this.shadow.getElementById('ptafSponsorPanel');
+      const button = this.shadow.getElementById('ptafSponsorToggle');
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      if (button) button.textContent = panel.hidden ? '请我喝杯茶' : '收起赞赏码';
     }
 
     applyNightMode(syncSnapshot) {

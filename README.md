@@ -104,6 +104,29 @@ https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user
 
 4. 打开 PTA 题目页面，点击标题前的星标即可收藏。
 
+### 让 AI Agent 协助安装
+
+如果你使用 Codex、ChatGPT、Claude、Cursor 或其他能够操作浏览器和终端的 AI Agent，可以直接把下面这段提示词发给它，让 Agent 协助完成安装：
+
+```text
+请协助我安装 PTA-Pro 的“PTA 收藏夹”油猴脚本。
+
+目标：
+1. 检查我的 Chrome 或 Edge 是否已经安装 Tampermonkey 等用户脚本管理器。
+2. 如果没有安装，请打开官方安装页面，指导我完成安装。
+3. 打开 GreasyFork 脚本页：
+   https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9
+4. 如果 GreasyFork 暂时不可用，改用 GitHub Raw：
+   https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js
+5. 安装完成后，打开任意 PTA 题目页面，确认标题前出现收藏星标。
+6. 如果安装或更新失败，请检查用户脚本管理器的版本和更新状态，不要修改或删除我的其他脚本。
+
+安全要求：
+- 不要读取、记录或上传我的密码、Cookie、API Key 或浏览历史。
+- 遇到登录、验证码或权限确认时，请暂停并让我自己操作。
+- 不要自动提交 PTA 题目，不要访问隐藏测试点。
+```
+
 ## 使用说明
 
 - **左键星标**：收藏；再次左键取消收藏并删除本地快照。
@@ -152,3 +175,11 @@ build.mjs    构建脚本
 ## 许可证
 
 [MIT](LICENSE)
+
+## 请我喝杯茶
+
+如果 PTA-Pro 对你有帮助，可以请作者喝杯茶。感谢你的支持。
+
+<p align="center">
+  <img src="docs/assets/sponsor-qr.jpg" alt="请我喝杯茶赞赏码" width="320">
+</p>

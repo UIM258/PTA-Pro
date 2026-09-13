@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.4';
+  const APP_VERSION = '0.36.5';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -25,6 +25,7 @@
     script: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js',
     issues: 'https://github.com/UIM258/PTA-Pro/issues',
     greasyfork: 'https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9',
+    sponsorQr: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/docs/assets/sponsor-qr.jpg',
   };
   const AI_PROVIDERS = {
     '': { label: '自定义', baseUrl: '' },
@@ -1739,6 +1740,11 @@
                 <a class="ptaf-btn" href="${PROJECT_LINKS.issues}" target="_blank" rel="noopener noreferrer">问题反馈</a>
               </div>
               <div class="ptaf-about-note">收藏、快照和设置默认仅保存在本地浏览器。请遵守 PTA 及所在学校的使用规范。</div>
+              <button class="ptaf-btn ptaf-sponsor-toggle" id="ptafSponsorToggle" type="button">请我喝杯茶</button>
+              <div class="ptaf-sponsor-panel" id="ptafSponsorPanel" hidden>
+                <img src="${PROJECT_LINKS.sponsorQr}" alt="赞赏码" loading="lazy">
+                <div>如果 PTA-Pro 对你有帮助，可以请作者喝杯茶。</div>
+              </div>
             </div>
           </section>
         </div>
@@ -1777,6 +1783,7 @@
       this.shadow.getElementById('ptafShortcutSettings').addEventListener('click', () => this.openShortcutSettings());
       this.shadow.getElementById('ptafNightMode').addEventListener('click', () => this.toggleNightMode());
       this.shadow.getElementById('ptafAbout').addEventListener('click', () => this.openModal('about'));
+      this.shadow.getElementById('ptafSponsorToggle').addEventListener('click', () => this.toggleSponsorPanel());
       this.shadow.getElementById('ptafAiSettings').addEventListener('click', () => this.openAiSettings());
       this.shadow.getElementById('ptafSnapshotAi').addEventListener('click', () => this.openAiPanel(this.currentSnapshotId));
       this.shadow.getElementById('ptafAiSaveSettings').addEventListener('click', () => this.saveAiSettings());
@@ -2374,6 +2381,14 @@
       this.store.save(true);
       this.applyNightMode(true);
       this.toast(enabled ? '已开启夜间模式' : '已关闭夜间模式');
+    }
+
+    toggleSponsorPanel() {
+      const panel = this.shadow.getElementById('ptafSponsorPanel');
+      const button = this.shadow.getElementById('ptafSponsorToggle');
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      if (button) button.textContent = panel.hidden ? '请我喝杯茶' : '收起赞赏码';
     }
 
     applyNightMode(syncSnapshot) {
