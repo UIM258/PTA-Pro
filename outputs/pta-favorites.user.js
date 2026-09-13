@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.2
+// @version      0.36.3
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1063,7 +1063,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.2';
+  const APP_VERSION = '0.36.3';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -2652,7 +2652,7 @@ button {
 .ptaf-floating {
   position: fixed;
   right: 22px;
-  bottom: 30px;
+  bottom: 24px;
   z-index: 2147483000;
   display: inline-flex;
   align-items: center;
@@ -4071,9 +4071,9 @@ button {
 }
 .ptaf-about-trigger {
   position: fixed;
-  right: 12px;
+  right: 22px;
   left: auto;
-  bottom: 0;
+  bottom: 78px;
   z-index: 2147483000;
   min-height: 26px;
   padding: 3px 8px;
@@ -4191,7 +4191,7 @@ button {
         <button class="ptaf-floating" id="ptafOpenDrawer" type="button" title="打开 PTA 收藏夹">
           <span>PTA 收藏夹</span>
         </button>
-        <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro">About</button>
+        <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro">关于</button>
 
         <div class="ptaf-overlay" id="ptafDrawer">
           <aside class="ptaf-drawer" aria-label="PTA 收藏夹">
@@ -6375,6 +6375,7 @@ button {
     GM_registerMenuCommand('导出 Markdown', () => ui.exportMarkdown());
     GM_registerMenuCommand('导出 JSON 备份', () => ui.exportJson());
     GM_registerMenuCommand('快捷键说明', () => ui.showShortcutHelp());
+    GM_registerMenuCommand('关于 PTA-Pro', () => ui.openModal('about'));
   }
 
   async function cleanupUncollected() {

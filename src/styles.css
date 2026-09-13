@@ -35,7 +35,7 @@ button {
 .ptaf-floating {
   position: fixed;
   right: 22px;
-  bottom: 30px;
+  bottom: 24px;
   z-index: 2147483000;
   display: inline-flex;
   align-items: center;
@@ -1454,9 +1454,9 @@ button {
 }
 .ptaf-about-trigger {
   position: fixed;
-  right: 12px;
+  right: 22px;
   left: auto;
-  bottom: 0;
+  bottom: 78px;
   z-index: 2147483000;
   min-height: 26px;
   padding: 3px 8px;

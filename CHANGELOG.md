@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.3
+
+- About 移动到右下角主按钮上方，避免被浏览器底边遮挡。
+- 增加 Tampermonkey 菜单入口 PTA-Pro About。
+
 ## 0.36.2
 
 - 在 exam/problems/type 题目列表页隐藏左侧 PTA 收藏夹入口。
