@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.37.1';
+  const APP_VERSION = '0.37.2';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -2122,7 +2122,6 @@
         startBottom: window.innerHeight - rect.bottom,
         moved: false,
       };
-      try { this.launcher.setPointerCapture(event.pointerId); } catch (error) {}
       window.addEventListener('pointermove', this.handleLauncherDrag, true);
       window.addEventListener('pointerup', this.endLauncherDrag, true);
       window.addEventListener('pointercancel', this.endLauncherDrag, true);
