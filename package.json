@@ -1,6 +1,6 @@
 {
   "name": "pta-pro",
-  "version": "0.37.0",
+  "version": "0.37.1",
   "private": true,
   "description": "PTA 收藏夹脚本：收藏分类、本地快照、判题记录与 AI 学习助手。",
   "author": "UIM258",
