@@ -122,6 +122,7 @@
         bookmarkOrder: {},
         shortcuts: { ...DEFAULT_SHORTCUTS },
         nightMode: false,
+        launcherPosition: { right: 22, bottom: 24 },
         ai: { baseUrl: '', model: '', temperature: 0.2, maxTokens: 2500, timeoutMs: 60000 },
       },
       folders: {

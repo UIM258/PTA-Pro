@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.9';
+  const APP_VERSION = '0.37.0';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -1597,12 +1597,16 @@
       this.currentPage = 1;
       this.snapshotResizeCleanup = null;
       this.dragState = null;
+      this.launcherDrag = null;
+      this.suppressLauncherClick = false;
       this.expandedProblemSets = new Set();
       this.toastTimer = null;
       this.host = null;
       this.shadow = null;
       this.openDrawer = this.openDrawer.bind(this);
       this.render = this.render.bind(this);
+      this.handleLauncherDrag = this.handleLauncherDrag.bind(this);
+      this.endLauncherDrag = this.endLauncherDrag.bind(this);
     }
 
     mount() {
@@ -1618,10 +1622,12 @@
 
       const shell = document.createElement('div');
       shell.innerHTML = `
-        <button class="ptaf-floating" id="ptafOpenDrawer" type="button" title="打开 PTA 收藏夹">
-          <span>PTA 收藏夹</span>
-        </button>
-        <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro">关于</button>
+        <div class="ptaf-launcher" id="ptafLauncher" title="按住拖动可移动按钮组">
+          <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro · 按住可拖动">关于</button>
+          <button class="ptaf-floating" id="ptafOpenDrawer" type="button" title="打开 PTA 收藏夹 · 按住可拖动">
+            <span>PTA 收藏夹</span>
+          </button>
+        </div>
 
         <div class="ptaf-overlay" id="ptafDrawer">
           <aside class="ptaf-drawer" aria-label="PTA 收藏夹">
@@ -1798,6 +1804,7 @@
       `;
       this.shadow.appendChild(shell);
 
+      this.launcher = this.shadow.getElementById('ptafLauncher');
       this.drawerOverlay = this.shadow.getElementById('ptafDrawer');
       this.drawer = this.drawerOverlay.querySelector('.ptaf-drawer');
       this.tree = this.shadow.getElementById('ptafTree');
@@ -1813,6 +1820,7 @@
       this.aboutModal = this.shadow.getElementById('ptafAboutModal');
       this.toastElement = this.shadow.getElementById('ptafToast');
       document.documentElement.appendChild(this.host);
+      this.applyLauncherPosition();
 
       this.bindEvents();
       this.store.subscribe(() => this.render());
@@ -1857,6 +1865,12 @@
 
       this.shadow.addEventListener('pointerdown', (event) => {
         if (event.target.closest('[data-ptaf-split-resizer]')) this.startSnapshotResize(event);
+      });
+
+      this.launcher.addEventListener('pointerdown', (event) => this.startLauncherDrag(event));
+      this.launcher.addEventListener('click', (event) => this.captureLauncherClick(event), true);
+      window.addEventListener('resize', () => {
+        if (!this.launcherDrag) this.applyLauncherPosition();
       });
 
       this.shadow.addEventListener('change', (event) => {
@@ -2080,6 +2094,84 @@
       this.drawerOverlay.addEventListener('click', (event) => {
         if (event.target === this.drawerOverlay) this.closeDrawer();
       });
+    }
+
+    applyLauncherPosition() {
+      if (!this.launcher) return;
+      const position = this.store.state.settings.launcherPosition || {};
+      const width = this.launcher.offsetWidth || 120;
+      const height = this.launcher.offsetHeight || 80;
+      const maxRight = Math.max(8, window.innerWidth - width - 8);
+      const maxBottom = Math.max(8, window.innerHeight - height - 8);
+      const right = Math.min(Math.max(8, Number(position.right) || 22), maxRight);
+      const bottom = Math.min(Math.max(8, Number(position.bottom) || 24), maxBottom);
+      this.launcher.style.right = `${right}px`;
+      this.launcher.style.bottom = `${bottom}px`;
+      this.launcher.style.left = 'auto';
+      this.launcher.style.top = 'auto';
+    }
+
+    startLauncherDrag(event) {
+      if (!this.launcher || (event.button !== 0 && event.pointerType !== 'touch')) return;
+      const rect = this.launcher.getBoundingClientRect();
+      this.launcherDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startRight: window.innerWidth - rect.right,
+        startBottom: window.innerHeight - rect.bottom,
+        moved: false,
+      };
+      try { this.launcher.setPointerCapture(event.pointerId); } catch (error) {}
+      window.addEventListener('pointermove', this.handleLauncherDrag, true);
+      window.addEventListener('pointerup', this.endLauncherDrag, true);
+      window.addEventListener('pointercancel', this.endLauncherDrag, true);
+    }
+
+    handleLauncherDrag(event) {
+      const drag = this.launcherDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.launcher) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (Math.hypot(dx, dy) > 4) drag.moved = true;
+      if (!drag.moved) return;
+      event.preventDefault();
+      const width = this.launcher.offsetWidth || 120;
+      const height = this.launcher.offsetHeight || 80;
+      const maxRight = Math.max(8, window.innerWidth - width - 8);
+      const maxBottom = Math.max(8, window.innerHeight - height - 8);
+      const right = Math.min(Math.max(8, drag.startRight - dx), maxRight);
+      const bottom = Math.min(Math.max(8, drag.startBottom - dy), maxBottom);
+      this.launcher.classList.add('is-dragging');
+      this.launcher.style.right = `${right}px`;
+      this.launcher.style.bottom = `${bottom}px`;
+      this.launcher.style.left = 'auto';
+      this.launcher.style.top = 'auto';
+    }
+
+    endLauncherDrag(event) {
+      const drag = this.launcherDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.launcher) return;
+      window.removeEventListener('pointermove', this.handleLauncherDrag, true);
+      window.removeEventListener('pointerup', this.endLauncherDrag, true);
+      window.removeEventListener('pointercancel', this.endLauncherDrag, true);
+      this.launcher.classList.remove('is-dragging');
+      if (drag.moved) {
+        const right = Math.round(Number.parseFloat(this.launcher.style.right) || 22);
+        const bottom = Math.round(Number.parseFloat(this.launcher.style.bottom) || 24);
+        this.store.state.settings.launcherPosition = { right, bottom };
+        this.store.save(true);
+        this.suppressLauncherClick = true;
+        setTimeout(() => { this.suppressLauncherClick = false; }, 250);
+      }
+      this.launcherDrag = null;
+    }
+
+    captureLauncherClick(event) {
+      if (!this.suppressLauncherClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.suppressLauncherClick = false;
     }
 
     openDrawer() {

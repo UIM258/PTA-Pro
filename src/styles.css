@@ -32,11 +32,34 @@ button {
   cursor: pointer;
 }
 
-.ptaf-floating {
+.ptaf-launcher {
   position: fixed;
   right: 22px;
   bottom: 24px;
   z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  touch-action: none;
+  user-select: none;
+}
+
+.ptaf-launcher.is-dragging {
+  cursor: grabbing;
+}
+
+.ptaf-launcher.is-dragging .ptaf-floating,
+.ptaf-launcher.is-dragging .ptaf-about-trigger {
+  cursor: grabbing;
+  transform: none;
+}
+
+.ptaf-floating {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1453,11 +1476,12 @@ button {
   border-color: var(--ptaf-primary);
 }
 .ptaf-about-trigger {
-  position: fixed;
-  right: 22px;
+  position: relative;
+  right: auto;
   left: auto;
-  bottom: 78px;
-  z-index: 2147483000;
+  bottom: auto;
+  z-index: auto;
+  align-self: flex-end;
   min-height: 26px;
   padding: 3px 8px;
   color: #3b4d63;

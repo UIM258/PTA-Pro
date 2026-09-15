@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.36.9
+// @version      0.37.0
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -148,6 +148,7 @@
         bookmarkOrder: {},
         shortcuts: { ...DEFAULT_SHORTCUTS },
         nightMode: false,
+        launcherPosition: { right: 22, bottom: 24 },
         ai: { baseUrl: '', model: '', temperature: 0.2, maxTokens: 2500, timeoutMs: 60000 },
       },
       folders: {
@@ -1063,7 +1064,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.36.9';
+  const APP_VERSION = '0.37.0';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -2645,12 +2646,16 @@
       this.currentPage = 1;
       this.snapshotResizeCleanup = null;
       this.dragState = null;
+      this.launcherDrag = null;
+      this.suppressLauncherClick = false;
       this.expandedProblemSets = new Set();
       this.toastTimer = null;
       this.host = null;
       this.shadow = null;
       this.openDrawer = this.openDrawer.bind(this);
       this.render = this.render.bind(this);
+      this.handleLauncherDrag = this.handleLauncherDrag.bind(this);
+      this.endLauncherDrag = this.endLauncherDrag.bind(this);
     }
 
     mount() {
@@ -2696,11 +2701,34 @@ button {
   cursor: pointer;
 }
 
-.ptaf-floating {
+.ptaf-launcher {
   position: fixed;
   right: 22px;
   bottom: 24px;
   z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  touch-action: none;
+  user-select: none;
+}
+
+.ptaf-launcher.is-dragging {
+  cursor: grabbing;
+}
+
+.ptaf-launcher.is-dragging .ptaf-floating,
+.ptaf-launcher.is-dragging .ptaf-about-trigger {
+  cursor: grabbing;
+  transform: none;
+}
+
+.ptaf-floating {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4117,11 +4145,12 @@ button {
   border-color: var(--ptaf-primary);
 }
 .ptaf-about-trigger {
-  position: fixed;
-  right: 22px;
+  position: relative;
+  right: auto;
   left: auto;
-  bottom: 78px;
-  z-index: 2147483000;
+  bottom: auto;
+  z-index: auto;
+  align-self: flex-end;
   min-height: 26px;
   padding: 3px 8px;
   color: #3b4d63;
@@ -4346,10 +4375,12 @@ button {
 
       const shell = document.createElement('div');
       shell.innerHTML = `
-        <button class="ptaf-floating" id="ptafOpenDrawer" type="button" title="打开 PTA 收藏夹">
-          <span>PTA 收藏夹</span>
-        </button>
-        <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro">关于</button>
+        <div class="ptaf-launcher" id="ptafLauncher" title="按住拖动可移动按钮组">
+          <button class="ptaf-about-trigger" id="ptafAbout" type="button" title="关于 PTA-Pro · 按住可拖动">关于</button>
+          <button class="ptaf-floating" id="ptafOpenDrawer" type="button" title="打开 PTA 收藏夹 · 按住可拖动">
+            <span>PTA 收藏夹</span>
+          </button>
+        </div>
 
         <div class="ptaf-overlay" id="ptafDrawer">
           <aside class="ptaf-drawer" aria-label="PTA 收藏夹">
@@ -4526,6 +4557,7 @@ button {
       `;
       this.shadow.appendChild(shell);
 
+      this.launcher = this.shadow.getElementById('ptafLauncher');
       this.drawerOverlay = this.shadow.getElementById('ptafDrawer');
       this.drawer = this.drawerOverlay.querySelector('.ptaf-drawer');
       this.tree = this.shadow.getElementById('ptafTree');
@@ -4541,6 +4573,7 @@ button {
       this.aboutModal = this.shadow.getElementById('ptafAboutModal');
       this.toastElement = this.shadow.getElementById('ptafToast');
       document.documentElement.appendChild(this.host);
+      this.applyLauncherPosition();
 
       this.bindEvents();
       this.store.subscribe(() => this.render());
@@ -4585,6 +4618,12 @@ button {
 
       this.shadow.addEventListener('pointerdown', (event) => {
         if (event.target.closest('[data-ptaf-split-resizer]')) this.startSnapshotResize(event);
+      });
+
+      this.launcher.addEventListener('pointerdown', (event) => this.startLauncherDrag(event));
+      this.launcher.addEventListener('click', (event) => this.captureLauncherClick(event), true);
+      window.addEventListener('resize', () => {
+        if (!this.launcherDrag) this.applyLauncherPosition();
       });
 
       this.shadow.addEventListener('change', (event) => {
@@ -4808,6 +4847,84 @@ button {
       this.drawerOverlay.addEventListener('click', (event) => {
         if (event.target === this.drawerOverlay) this.closeDrawer();
       });
+    }
+
+    applyLauncherPosition() {
+      if (!this.launcher) return;
+      const position = this.store.state.settings.launcherPosition || {};
+      const width = this.launcher.offsetWidth || 120;
+      const height = this.launcher.offsetHeight || 80;
+      const maxRight = Math.max(8, window.innerWidth - width - 8);
+      const maxBottom = Math.max(8, window.innerHeight - height - 8);
+      const right = Math.min(Math.max(8, Number(position.right) || 22), maxRight);
+      const bottom = Math.min(Math.max(8, Number(position.bottom) || 24), maxBottom);
+      this.launcher.style.right = `${right}px`;
+      this.launcher.style.bottom = `${bottom}px`;
+      this.launcher.style.left = 'auto';
+      this.launcher.style.top = 'auto';
+    }
+
+    startLauncherDrag(event) {
+      if (!this.launcher || (event.button !== 0 && event.pointerType !== 'touch')) return;
+      const rect = this.launcher.getBoundingClientRect();
+      this.launcherDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startRight: window.innerWidth - rect.right,
+        startBottom: window.innerHeight - rect.bottom,
+        moved: false,
+      };
+      try { this.launcher.setPointerCapture(event.pointerId); } catch (error) {}
+      window.addEventListener('pointermove', this.handleLauncherDrag, true);
+      window.addEventListener('pointerup', this.endLauncherDrag, true);
+      window.addEventListener('pointercancel', this.endLauncherDrag, true);
+    }
+
+    handleLauncherDrag(event) {
+      const drag = this.launcherDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.launcher) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (Math.hypot(dx, dy) > 4) drag.moved = true;
+      if (!drag.moved) return;
+      event.preventDefault();
+      const width = this.launcher.offsetWidth || 120;
+      const height = this.launcher.offsetHeight || 80;
+      const maxRight = Math.max(8, window.innerWidth - width - 8);
+      const maxBottom = Math.max(8, window.innerHeight - height - 8);
+      const right = Math.min(Math.max(8, drag.startRight - dx), maxRight);
+      const bottom = Math.min(Math.max(8, drag.startBottom - dy), maxBottom);
+      this.launcher.classList.add('is-dragging');
+      this.launcher.style.right = `${right}px`;
+      this.launcher.style.bottom = `${bottom}px`;
+      this.launcher.style.left = 'auto';
+      this.launcher.style.top = 'auto';
+    }
+
+    endLauncherDrag(event) {
+      const drag = this.launcherDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.launcher) return;
+      window.removeEventListener('pointermove', this.handleLauncherDrag, true);
+      window.removeEventListener('pointerup', this.endLauncherDrag, true);
+      window.removeEventListener('pointercancel', this.endLauncherDrag, true);
+      this.launcher.classList.remove('is-dragging');
+      if (drag.moved) {
+        const right = Math.round(Number.parseFloat(this.launcher.style.right) || 22);
+        const bottom = Math.round(Number.parseFloat(this.launcher.style.bottom) || 24);
+        this.store.state.settings.launcherPosition = { right, bottom };
+        this.store.save(true);
+        this.suppressLauncherClick = true;
+        setTimeout(() => { this.suppressLauncherClick = false; }, 250);
+      }
+      this.launcherDrag = null;
+    }
+
+    captureLauncherClick(event) {
+      if (!this.suppressLauncherClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.suppressLauncherClick = false;
     }
 
     openDrawer() {
