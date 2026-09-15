@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.37.0
+// @version      0.37.1
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -1064,7 +1064,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.37.0';
+  const APP_VERSION = '0.37.1';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -6582,15 +6582,13 @@ button {
 
   function injectSidebarEntry() {
     const path = location.pathname;
-    const isExamProblemListPage = /^\/problem-sets\/[^/]+\/exam\/problems(?:\/|$)/.test(path)
-      && !new URL(location.href).searchParams.has('problemSetProblemId');
-    if (isExamProblemListPage) {
+    const shouldInject = /\/problem-sets\/(?:active|all|dashboard)/.test(path) || /\/overview$/.test(path);
+    if (!shouldInject) {
       document.querySelectorAll('[data-ptaf-sidebar-entry]').forEach((host) => host.remove());
       return;
     }
     const sidebar = document.querySelector('[data-sidebar="sidebar"]');
     if (!sidebar) return;
-    const labelMode = /\/problem-sets\/(?:active|all|dashboard)/.test(path) || /\/overview$/.test(path);
     let host = sidebar.querySelector('[data-ptaf-sidebar-entry]');
     if (!host) {
       host = document.createElement("div");
@@ -6616,7 +6614,7 @@ button {
       const parent = header || sidebar;
       parent.insertBefore(host, parent.firstChild);
     }
-    host.setAttribute("data-mode", labelMode ? "label" : "icon");
+    host.setAttribute("data-mode", "label");
     const button = host.shadowRoot && host.shadowRoot.querySelector("button");
     if (button) button.title = "打开 PTA 收藏夹";
   }
