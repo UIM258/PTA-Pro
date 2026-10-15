@@ -12,8 +12,11 @@
   const STORAGE_VERSION = 1;
   const DEFAULT_FOLDER_ID = 'default';
 
+  const LOCAL_PROBLEM_PREFIX = 'local-';
+
   const DEFAULT_SHORTCUTS = {
     toggleDrawer: 'Alt+Shift+F',
+    createProblem: 'Alt+Shift+N',
     toggleCurrentFavorite: 'Alt+Shift+S',
     toggleBatchMode: 'Alt+Shift+B',
     editSnapshotAnswer: 'Alt+Shift+E',
@@ -114,6 +117,7 @@
       updatedAt: createdAt,
       settings: {
         defaultFolderId: DEFAULT_FOLDER_ID,
+        lastCreateType: 'single_choice',
         snapshotByDefault: true,
         openDetailAfterCollect: false,
         maxSubmissions: 8,
@@ -639,6 +643,25 @@
     return Boolean(bookmark && Array.isArray(bookmark.folderIds) && bookmark.folderIds.length > 0);
   }
 
+  function isLocalProblem(bookmark) {
+    if (!bookmark) return false;
+    if (bookmark.local === true) return true;
+    return String(bookmark.problemId || '').startsWith(LOCAL_PROBLEM_PREFIX);
+  }
+
+  function localProblemSetId(name) {
+    const text = normalizeWhitespace(name) || '本地创建';
+    let hash = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+    }
+    return LOCAL_PROBLEM_PREFIX + 'set-' + hash.toString(36);
+  }
+
+  function createLocalProblemId() {
+    return LOCAL_PROBLEM_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
   function groupBookmarks(state) {
     const bookmarks = Object.values(state.bookmarks || {}).filter(isCollected);
     const setMap = new Map();
@@ -1002,6 +1025,10 @@
     listUserFolders,
     groupBookmarks,
     isCollected,
+    isLocalProblem,
+    localProblemSetId,
+    createLocalProblemId,
+    LOCAL_PROBLEM_PREFIX,
     matchesSelection,
     bookmarkOrderKey,
     sortBookmarksByStoredOrder,

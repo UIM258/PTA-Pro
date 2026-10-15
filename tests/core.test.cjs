@@ -201,3 +201,48 @@ test('markdown export groups by problem set and includes answer state', () => {
 });
 
 
+
+test('local problem helpers build stable ids and grouping keys', () => {
+  const setName = '本地题库';
+  const first = Core.localProblemSetId(setName);
+  assert.equal(first, Core.localProblemSetId(setName));
+  assert.notEqual(first, Core.localProblemSetId('另一个题集'));
+  assert.equal(first.startsWith(Core.LOCAL_PROBLEM_PREFIX), true);
+
+  const problemId = Core.createLocalProblemId();
+  assert.equal(problemId.startsWith(Core.LOCAL_PROBLEM_PREFIX), true);
+  assert.notEqual(problemId, Core.createLocalProblemId());
+
+  const state = Core.createInitialState();
+  const bookmark = Core.createBookmark({
+    url: 'https://sduwh.pintia.cn/problem-sets/' + first + '/problems/' + problemId,
+    title: '最大子列和问题（自建）',
+    problemSetId: first,
+    problemSetName: setName,
+    type: 'programming',
+    folderIds: [Core.DEFAULT_FOLDER_ID],
+  });
+  assert.equal(Core.isLocalProblem(bookmark), true);
+  assert.equal(bookmark.problemId, problemId);
+  assert.equal(bookmark.problemSetId, first);
+
+  Core.upsertBookmarkInState(state, bookmark);
+  const groups = Core.groupBookmarks(state);
+  assert.equal(groups.problemSets.length, 1);
+  assert.equal(groups.problemSets[0].id, first);
+  assert.equal(groups.problemSets[0].name, setName);
+  assert.equal(Core.matchesSelection(bookmark, { kind: 'smart-set', problemSetId: first }), true);
+
+  const remote = Core.createBookmark({
+    url: 'https://sduwh.pintia.cn/problem-sets/set-9/problems/p-9',
+    title: '7-9 远程题',
+  });
+  assert.equal(Core.isLocalProblem(remote), false);
+});
+
+test('default shortcuts include quick problem creation', () => {
+  const state = Core.createInitialState();
+  assert.equal(Core.DEFAULT_SHORTCUTS.createProblem, 'Alt+Shift+N');
+  assert.equal(state.settings.shortcuts.createProblem, 'Alt+Shift+N');
+  assert.equal(state.settings.lastCreateType, 'single_choice');
+});

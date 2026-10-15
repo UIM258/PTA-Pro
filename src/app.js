@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.37.2';
+  const APP_VERSION = '0.38.0';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -50,6 +50,7 @@
     toggleDrawer: '打开/关闭收藏夹',
     toggleCurrentFavorite: '收藏/取消收藏当前题目',
     toggleBatchMode: '切换批量管理',
+    createProblem: '新建题目（快速创建）',
     editSnapshotAnswer: '编辑快照中的我的作答',
     snapshotPrev: '快照上一题',
     snapshotNext: '快照下一题',
@@ -565,6 +566,234 @@
     </div>`;
   }
 
+  const LOCAL_CREATE_TYPES = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank', 'function', 'programming', 'short_answer'];
+  const CHOICE_LETTERS = 'ABCDEFGHIJKLMNOP';
+
+  function isChoiceDraft(draft) {
+    return Boolean(draft) && (draft.type === 'single_choice' || draft.type === 'multiple_choice');
+  }
+
+  function parseOptionText(text) {
+    const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
+    return lines.map((line, index) => {
+      const match = line.match(/^([A-Za-z])\s*[.、:：)）]\s*(.*)$/);
+      const letter = match ? match[1].toUpperCase() : (CHOICE_LETTERS[index] || String(index + 1));
+      return { letter, text: (match ? match[2] : line).trim() };
+    });
+  }
+
+  function splitAnswerLines(text) {
+    return String(text || '').replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
+  }
+
+  function compactOptionAnswer(option) {
+    return option.letter + '.' + String(option.text || '').replace(/\s+/g, '');
+  }
+
+  function defaultCreateDraft(type) {
+    const resolved = LOCAL_CREATE_TYPES.includes(type) ? type : 'single_choice';
+    const choice = resolved === 'single_choice' || resolved === 'multiple_choice';
+    const code = resolved === 'programming' || resolved === 'function';
+    return {
+      type: resolved,
+      label: '',
+      title: '',
+      setName: '',
+      tags: '',
+      note: '',
+      status: 'todo',
+      stem: '',
+      optionsText: choice ? 'A. \nB. \nC. \nD. ' : '',
+      myAnswer: '',
+      officialAnswer: '',
+      explanation: '',
+      samplesIn: '',
+      samplesOut: '',
+      hints: '',
+      language: code ? 'C' : '',
+      referenceCode: '',
+      myCode: '',
+      folderIds: [],
+    };
+  }
+
+  function createTemplateText(type) {
+    if (type === 'single_choice' || type === 'multiple_choice') {
+      return {
+        stem: '这里填写题干。支持 Markdown：**加粗**、*斜体*、列表、行内代码和代码块。',
+        officialAnswer: type === 'multiple_choice' ? 'A' : 'A',
+        explanation: '',
+      };
+    }
+    if (type === 'true_false') {
+      return { stem: '这里填写判断题题干。', officialAnswer: '正确', explanation: '' };
+    }
+    if (type === 'fill_blank') {
+      return { stem: '这里填写题干，空缺处用 ______ 表示。', officialAnswer: '', explanation: '' };
+    }
+    if (type === 'function') {
+      return {
+        stem: '请实现如下函数：\n\n```c\nint example(int n);\n```\n\n函数要求说明。',
+        officialAnswer: '',
+        explanation: '',
+        samplesIn: '',
+        samplesOut: '',
+        hints: '',
+      };
+    }
+    if (type === 'programming') {
+      return {
+        stem: '题目描述：\n\n- 输入格式\n- 输出格式\n- 数据范围',
+        officialAnswer: '',
+        explanation: '',
+        samplesIn: '6\n-2 11 -4 13 -5 -2',
+        samplesOut: '20',
+        hints: '1 ≤ n ≤ 10^5',
+      };
+    }
+    return { stem: '这里填写简答题题干。', officialAnswer: '', explanation: '' };
+  }
+
+  function localChoiceGroups(draft) {
+    if (!isChoiceDraft(draft)) return [];
+    const options = parseOptionText(draft.optionsText);
+    if (!options.length) return [];
+    const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+    return [{
+      name: 'ptafLocalChoice',
+      kind: draft.type === 'multiple_choice' ? 'checkbox' : 'radio',
+      prompt: Core.normalizeWhitespace(draft.stem).slice(0, 200),
+      options: options.map((option) => ({
+        value: option.letter,
+        answer: compactOptionAnswer(option),
+        label: compactOptionAnswer(option),
+        checked: selected.includes(option.letter),
+      })),
+    }];
+  }
+
+  function localSnapshotAnswers(draft) {
+    const prompt = Core.normalizeWhitespace(draft.stem).slice(0, 200) || '本地创建题目';
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+      const kind = draft.type === 'multiple_choice' ? 'checkbox' : 'radio';
+      return options
+        .filter((option) => selected.includes(option.letter))
+        .map((option) => ({ kind, prompt, answer: compactOptionAnswer(option) }));
+    }
+    const lines = splitAnswerLines(draft.myAnswer);
+    if (!lines.length) return [];
+    const kind = draft.type === 'true_false' ? 'radio' : 'text';
+    return lines.map((line) => ({ kind, prompt, answer: line }));
+  }
+
+  function localStemHtml(draft) {
+    const parts = [];
+    const heading = (draft.label ? draft.label + ' ' : '') + (draft.title || '未命名题目');
+    parts.push('<div class="ptaf-local-problem">');
+    parts.push('<h2 class="ptaf-local-title">' + escapeHtml(heading) + '</h2>');
+    if (draft.stem) parts.push('<div class="rendered-markdown">' + renderMarkdownHtml(draft.stem) + '</div>');
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+      const kind = draft.type === 'multiple_choice' ? 'checkbox' : 'radio';
+      if (options.length) {
+        parts.push('<div class="ptaf-local-options">' + options.map((option) => '<label class="ptaf-local-option"><input type="' + kind + '" name="ptafLocalChoice" value="' + escapeHtml(option.letter) + '"' + (selected.includes(option.letter) ? ' checked' : '') + '> <span>' + escapeHtml(option.letter + '. ' + option.text) + '</span></label>').join('') + '</div>');
+      }
+    }
+    if (draft.type === 'fill_blank') {
+      const answers = splitAnswerLines(draft.myAnswer);
+      parts.push('<div class="ptaf-local-blanks">' + (answers.length ? answers : ['']).map((value, index) => '<label class="ptaf-local-blank"><span>第 ' + (index + 1) + ' 空</span><input type="text" value="' + escapeHtml(value) + '"></label>').join('') + '</div>');
+    }
+    if (draft.samplesIn) parts.push('<h3 class="ptaf-local-heading">输入样例</h3><pre class="ptaf-local-pre">' + escapeHtml(draft.samplesIn) + '</pre>');
+    if (draft.samplesOut) parts.push('<h3 class="ptaf-local-heading">输出样例</h3><pre class="ptaf-local-pre">' + escapeHtml(draft.samplesOut) + '</pre>');
+    if (draft.hints) parts.push('<h3 class="ptaf-local-heading">数据范围与提示</h3><div class="rendered-markdown">' + renderMarkdownHtml(draft.hints) + '</div>');
+    parts.push('</div>');
+    return parts.join('\n');
+  }
+
+  function localStemMarkdown(draft) {
+    const lines = [];
+    lines.push('# ' + ((draft.label ? draft.label + ' ' : '') + (draft.title || '未命名题目')));
+    if (draft.stem) lines.push('', draft.stem);
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      if (options.length) {
+        lines.push('', '## 选项');
+        options.forEach((option) => lines.push('- ' + option.letter + '. ' + option.text));
+      }
+    }
+    if (draft.samplesIn) lines.push('', '## 输入样例', '```', draft.samplesIn, '```');
+    if (draft.samplesOut) lines.push('', '## 输出样例', '```', draft.samplesOut, '```');
+    if (draft.hints) lines.push('', '## 数据范围与提示', draft.hints);
+    if (draft.type === 'fill_blank') {
+      const answers = splitAnswerLines(draft.myAnswer);
+      if (answers.length) lines.push('', '## 我的填空', answers.map((value, index) => (index + 1) + '. ' + value).join('\n'));
+    }
+    return lines.join('\n').trim();
+  }
+
+  function buildLocalSnapshot(bookmark, draft) {
+    const capturedAt = Date.now();
+    const html = localStemHtml(draft);
+    const markdown = localStemMarkdown(draft);
+    return {
+      bookmarkId: bookmark.id,
+      capturedAt,
+      url: bookmark.url,
+      capturedFromUrl: '',
+      capturedFromProblemId: bookmark.problemId || '',
+      title: bookmark.title,
+      html,
+      markdown,
+      text: markdown,
+      answers: localSnapshotAnswers(draft),
+      choiceGroups: localChoiceGroups(draft),
+      codeDraft: draft.myCode || '',
+      judgeConstraints: {},
+      pageStyles: {},
+      snapshotVersion: 2,
+      localCreated: true,
+      localDraft: Object.assign({}, draft, { folderIds: (draft.folderIds || []).slice() }),
+      answerVisibility: 'revealed',
+      officialAnswerExcerpt: '',
+      explanationExcerpt: '',
+      contentHash: Core.computeContentHash(markdown.slice(0, 200000)),
+      appVersion: APP_VERSION,
+    };
+  }
+
+  function draftFromLocalSnapshot(bookmark, snapshot) {
+    if (snapshot && snapshot.localDraft && typeof snapshot.localDraft === 'object') {
+      return Object.assign(defaultCreateDraft(bookmark.type), snapshot.localDraft, {
+        type: Core.normalizeProblemType(bookmark.type),
+        title: snapshot.localDraft.title || bookmark.title || '',
+        label: snapshot.localDraft.label || bookmark.label || '',
+        setName: snapshot.localDraft.setName || bookmark.problemSetName || '',
+        tags: snapshot.localDraft.tags || (bookmark.tags || []).join(', '),
+        note: snapshot.localDraft.note || bookmark.note || '',
+        status: snapshot.localDraft.status || bookmark.status || 'todo',
+        officialAnswer: snapshot.localDraft.officialAnswer != null && snapshot.localDraft.officialAnswer !== '' ? snapshot.localDraft.officialAnswer : (bookmark.answer && bookmark.answer.officialAnswer) || '',
+        explanation: snapshot.localDraft.explanation != null && snapshot.localDraft.explanation !== '' ? snapshot.localDraft.explanation : (bookmark.answer && bookmark.answer.explanation) || '',
+        referenceCode: snapshot.localDraft.referenceCode || (bookmark.answer && bookmark.answer.ai && bookmark.answer.ai.referenceCode) || '',
+        myCode: typeof snapshot.localCode === 'string' ? snapshot.localCode : snapshot.localDraft.myCode || '',
+      });
+    }
+    const draft = defaultCreateDraft(bookmark.type);
+    draft.title = bookmark.title || '';
+    draft.label = bookmark.label || '';
+    draft.setName = bookmark.problemSetName || '';
+    draft.tags = (bookmark.tags || []).join(', ');
+    draft.note = bookmark.note || '';
+    draft.status = bookmark.status || 'todo';
+    draft.stem = snapshot ? String(snapshot.markdown || snapshot.text || '') : '';
+    draft.myCode = snapshot && typeof snapshot.localCode === 'string' ? snapshot.localCode : (snapshot && snapshot.codeDraft) || '';
+    draft.officialAnswer = (bookmark.answer && bookmark.answer.officialAnswer) || '';
+    draft.explanation = (bookmark.answer && bookmark.answer.explanation) || '';
+    draft.referenceCode = (bookmark.answer && bookmark.answer.ai && bookmark.answer.ai.referenceCode) || '';
+    return draft;
+  }
   function safeFileName(value) {
     return String(value || 'export')
       .replace(/[\\/:*?"<>|]+/g, '-')
@@ -647,7 +876,7 @@
     if (ai.knowledgePoints.length) parts.push(section("knowledgePoints", "知识点", `<div class="ptaf-markdown"><ul>${ai.knowledgePoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul></div>`));
     const complexityText = [ai.complexity.time ? `时间：${ai.complexity.time}` : "", ai.complexity.space ? `空间：${ai.complexity.space}` : ""].filter(Boolean).join("；");
     if (complexityText) parts.push(section("complexity", "复杂度", escapeHtml(complexityText)));
-    return `<div class="ptaf-ai-reference"><div class="ptaf-ai-reference-head"><span class="ptaf-badge warning">AI 生成</span><span>${escapeHtml(ai.model || "未知模型")} · ${escapeHtml(Core.formatDate(ai.generatedAt))}</span><button class="ptaf-btn small danger" type="button" data-ptaf-ai-reference-delete>删除全部</button></div><div class="ptaf-ai-reference-body">${parts.join("")}</div></div>`;
+    return `<div class="ptaf-ai-reference"><div class="ptaf-ai-reference-head"><span class="ptaf-badge warning">${ai.skillId === 'manual' ? '手动录入' : 'AI 生成'}</span><span>${escapeHtml(ai.model || "未知模型")} · ${escapeHtml(Core.formatDate(ai.generatedAt))}</span><button class="ptaf-btn small danger" type="button" data-ptaf-ai-reference-delete>删除全部</button></div><div class="ptaf-ai-reference-body">${parts.join("")}</div></div>`;
   }
   function bookmarkDisplayTitle(bookmark) {
     const label = Core.normalizeWhitespace(bookmark && bookmark.label);
@@ -1598,7 +1827,7 @@
       this.snapshotResizeCleanup = null;
       this.dragState = null;
       this.launcherDrag = null;
-      this.suppressLauncherClick = false;
+      this.swallowLauncherClick = false;
       this.expandedProblemSets = new Set();
       this.toastTimer = null;
       this.host = null;
@@ -1639,6 +1868,7 @@
                 </div>
               </div>
               <div class="ptaf-header-actions">
+                <button class="ptaf-btn" id="ptafCreateProblem" type="button" title="快速创建题目（Alt+Shift+N）">＋ 新建题目</button>
                 <button class="ptaf-btn primary" id="ptafSelectExport" type="button">导出</button>
                 <button class="ptaf-btn" id="ptafImport" type="button">导入 JSON</button>
                 <button class="ptaf-btn" id="ptafAiSettings" type="button">AI 设置</button>
@@ -1691,10 +1921,26 @@
               <button class="ptaf-btn" id="ptafToggleSnapshotLayout" type="button">并排查看</button>
               <button class="ptaf-btn" id="ptafOpenOriginal" type="button">打开原题</button>
               <button class="ptaf-btn" id="ptafRefreshSnapshot" type="button">刷新快照</button>
+              <button class="ptaf-btn" id="ptafEditLocalProblem" type="button" hidden>编辑题目</button>
             </footer>
           </section>
         </div>
 
+        <div class="ptaf-overlay" id="ptafCreateModal">
+          <div class="ptaf-modal-backdrop" data-ptaf-close="create"></div>
+          <section class="ptaf-modal-card wide">
+            <header class="ptaf-modal-head">
+              <h3 id="ptafCreateTitle">新建题目</h3>
+              <button class="ptaf-btn small" data-ptaf-close="create" type="button">关闭</button>
+            </header>
+            <div class="ptaf-modal-body" id="ptafCreateBody"></div>
+            <footer class="ptaf-modal-foot">
+              <button class="ptaf-btn" id="ptafCreateTemplate" type="button">载入模板</button>
+              <button class="ptaf-btn" id="ptafCreateAddFolder" type="button">＋ 新建收藏夹</button>
+              <button class="ptaf-btn primary" id="ptafCreateSave" type="button">保存到收藏夹</button>
+            </footer>
+          </section>
+        </div>
         <div class="ptaf-overlay" id="ptafBatchFolderModal">
           <div class="ptaf-modal-backdrop" data-ptaf-close="batchFolder"></div>
           <section class="ptaf-modal-card narrow">
@@ -1818,6 +2064,7 @@
       this.aiModal = this.shadow.getElementById('ptafAiModal');
       this.aiSettingsModal = this.shadow.getElementById('ptafAiSettingsModal');
       this.aboutModal = this.shadow.getElementById('ptafAboutModal');
+      this.createModal = this.shadow.getElementById('ptafCreateModal');
       this.toastElement = this.shadow.getElementById('ptafToast');
       document.documentElement.appendChild(this.host);
       this.applyLauncherPosition();
@@ -1835,6 +2082,11 @@
       this.shadow.getElementById('ptafShortcutSettings').addEventListener('click', () => this.openShortcutSettings());
       this.shadow.getElementById('ptafNightMode').addEventListener('click', () => this.toggleNightMode());
       this.shadow.getElementById('ptafAbout').addEventListener('click', () => this.openModal('about'));
+      this.shadow.getElementById('ptafCreateProblem').addEventListener('click', () => this.openCreateProblem());
+      this.shadow.getElementById('ptafCreateSave').addEventListener('click', () => this.saveCreateProblem());
+      this.shadow.getElementById('ptafCreateTemplate').addEventListener('click', () => this.loadCreateTemplate());
+      this.shadow.getElementById('ptafCreateAddFolder').addEventListener('click', () => this.createFolderForCreate());
+      this.shadow.getElementById('ptafEditLocalProblem').addEventListener('click', () => this.openCreateProblem(this.currentSnapshotId));
       this.shadow.getElementById('ptafCheckUpdate').addEventListener('click', () => this.checkForUpdates());
       this.shadow.getElementById('ptafSponsorToggle').addEventListener('click', () => this.toggleSponsorPanel());
       this.shadow.getElementById('ptafAiSettings').addEventListener('click', () => this.openAiSettings());
@@ -1926,6 +2178,11 @@
       });
 
       this.shadow.addEventListener('click', (event) => {
+        const createTypeChip = event.target.closest('[data-ptaf-create-type]');
+        if (createTypeChip) {
+          this.switchCreateType(createTypeChip.getAttribute('data-ptaf-create-type'));
+          return;
+        }
         const close = event.target.closest('[data-ptaf-close]');
         if (close) {
           this.closeModal(close.getAttribute('data-ptaf-close'));
@@ -2111,6 +2368,18 @@
       this.launcher.style.top = 'auto';
     }
 
+    launcherActionFor(target) {
+      if (!target || typeof target.closest !== 'function') return '';
+      const button = target.closest('button');
+      if (!button) return '';
+      return button.id || '';
+    }
+
+    activateLauncherAction(action) {
+      if (action === 'ptafOpenDrawer') this.openDrawer();
+      if (action === 'ptafAbout') this.openModal('about');
+    }
+
     startLauncherDrag(event) {
       if (!this.launcher || (event.button !== 0 && event.pointerType !== 'touch')) return;
       const rect = this.launcher.getBoundingClientRect();
@@ -2121,6 +2390,7 @@
         startRight: window.innerWidth - rect.right,
         startBottom: window.innerHeight - rect.bottom,
         moved: false,
+        action: this.launcherActionFor(event.target),
       };
       window.addEventListener('pointermove', this.handleLauncherDrag, true);
       window.addEventListener('pointerup', this.endLauncherDrag, true);
@@ -2160,17 +2430,22 @@
         const bottom = Math.round(Number.parseFloat(this.launcher.style.bottom) || 24);
         this.store.state.settings.launcherPosition = { right, bottom };
         this.store.save(true);
-        this.suppressLauncherClick = true;
-        setTimeout(() => { this.suppressLauncherClick = false; }, 250);
       }
       this.launcherDrag = null;
+      // 点击动作统一在 pointerup 阶段触发，并吞掉随之而来的 click，
+      // 避免拖拽相关的 pointer 处理让按钮点不动。
+      if (event.type === 'pointerup') {
+        this.swallowLauncherClick = true;
+        setTimeout(() => { this.swallowLauncherClick = false; }, 500);
+        if (!drag.moved && drag.action) this.activateLauncherAction(drag.action);
+      }
     }
 
     captureLauncherClick(event) {
-      if (!this.suppressLauncherClick) return;
+      if (!this.swallowLauncherClick) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.suppressLauncherClick = false;
+      this.swallowLauncherClick = false;
     }
 
     openDrawer() {
@@ -2264,6 +2539,10 @@
     }
 
     executeShortcutAction(action) {
+      if (action === 'createProblem') {
+        this.openCreateProblem();
+        return;
+      }
       if (action === 'toggleDrawer') {
         if (this.drawerOverlay.classList.contains('is-open')) this.closeDrawer();
         else this.openDrawer();
@@ -2303,6 +2582,7 @@
         if (this.isModalOpen('shortcut')) { this.closeModal('shortcut'); event.preventDefault(); return; }
         if (this.isModalOpen('aiSettings')) { this.closeModal('aiSettings'); event.preventDefault(); return; }
         if (this.isModalOpen('ai')) { this.closeModal('ai'); event.preventDefault(); return; }
+        if (this.isModalOpen('create')) { this.closeModal('create'); event.preventDefault(); return; }
         if (this.isModalOpen('about')) { this.closeModal('about'); event.preventDefault(); return; }
         if (this.drawerOverlay.classList.contains('is-open')) { this.closeDrawer(); event.preventDefault(); }
         return;
@@ -2596,6 +2876,7 @@
       if (name === 'shortcut') return this.shortcutModal;
       if (name === 'ai') return this.aiModal;
       if (name === 'aiSettings') return this.aiSettingsModal;
+      if (name === 'create') return this.createModal;
       if (name === 'about') return this.aboutModal;
       return null;
     }
@@ -2614,6 +2895,7 @@
     }
 
     closeModal(name) {
+      if (name === 'create') this.editingLocalId = '';
       if (name === 'editor' && this.currentEditId) {
         const bookmark = this.store.state.bookmarks[this.currentEditId];
         if (bookmark && !Core.isCollected(bookmark)) {
@@ -2739,6 +3021,7 @@
 
       const cards = pageBookmarks.map((bookmark) => {
         const contentStatus = contentBadge(bookmark);
+        const isLocal = Core.isLocalProblem(bookmark);
         const answerVisibility = bookmark.answer && bookmark.answer.visibility ? bookmark.answer.visibility : 'unknown';
         const latest = bookmark.submissions && bookmark.submissions[0];
         const statusText = latest ? Core.statusSummary(bookmark) : Core.statusLabel(bookmark.status);
@@ -2748,13 +3031,16 @@
             ${this.batchMode ? `<label class="ptaf-select-box" title="选择用于批量管理"><input type="checkbox" data-ptaf-select-bookmark value="${escapeHtml(bookmark.id)}" ${this.selectedBookmarkIds.has(bookmark.id) ? 'checked' : ''}></label>` : '<span class="ptaf-drag-handle ptaf-card-drag-handle" title="拖动排序" aria-hidden="true">⋮⋮</span>'}
             <h4 class="ptaf-card-title">
               ${bookmark.label ? `<span>${escapeHtml(bookmark.label)}</span> ` : ''}
-              <a href="${escapeHtml(bookmark.url)}" target="_blank" rel="noreferrer">${escapeHtml(bookmark.title)}</a>
+                ${isLocal
+                ? `<span class="ptaf-card-title-text">${escapeHtml(bookmark.title)}</span>`
+                : `<a href="${escapeHtml(bookmark.url)}" target="_blank" rel="noreferrer">${escapeHtml(bookmark.title)}</a>`}
             </h4>
             <span class="ptaf-badge ${bookmark.status === 'done' ? 'success' : ''}">${escapeHtml(Core.statusLabel(bookmark.status))}</span>
           </div>
           <div class="ptaf-card-meta">${escapeHtml(bookmark.problemSetName || '未命名题目集')} · ${escapeHtml(Core.typeLabel(bookmark.type))}</div>
           <div class="ptaf-badges">
             <span class="ptaf-badge ${bookmark.content && bookmark.content.status === 'full' ? 'success' : 'warning'}">${escapeHtml(contentStatus)}</span>
+            ${isLocal ? '<span class="ptaf-badge">本地创建</span>' : ''}
             <span class="ptaf-badge ${answerBadgeClass(answerVisibility)}">${escapeHtml(Core.answerVisibilityLabel(answerVisibility))}</span>
             <span class="ptaf-badge ${statusBadgeClass(latest && latest.status)}">${escapeHtml(statusText)}</span>
             ${tags}
@@ -2763,7 +3049,9 @@
           <div class="ptaf-card-actions">
             <button class="ptaf-btn small" type="button" data-ptaf-action="edit" data-bookmark-id="${escapeHtml(bookmark.id)}">管理</button>
             <button class="ptaf-btn small" type="button" data-ptaf-action="snapshot" data-bookmark-id="${escapeHtml(bookmark.id)}">本地快照</button>
-            <button class="ptaf-btn small" type="button" data-ptaf-action="capture" data-bookmark-id="${escapeHtml(bookmark.id)}">更新快照</button>
+            ${isLocal
+              ? `<button class="ptaf-btn small" type="button" data-ptaf-action="edit-local" data-bookmark-id="${escapeHtml(bookmark.id)}">编辑题目</button>`
+              : `<button class="ptaf-btn small" type="button" data-ptaf-action="capture" data-bookmark-id="${escapeHtml(bookmark.id)}">更新快照</button>`}
             <button class="ptaf-btn small" type="button" data-ptaf-action="ai" data-bookmark-id="${escapeHtml(bookmark.id)}">AI</button>
           </div>
         </article>`;
@@ -2951,10 +3239,270 @@
     handleListAction(action, bookmarkId) {
       if (action === 'edit') this.openEditor(bookmarkId);
       if (action === 'snapshot') this.openSnapshot(bookmarkId);
+      if (action === 'edit-local') this.openCreateProblem(bookmarkId);
       if (action === 'capture') this.captureBookmark(bookmarkId);
       if (action === 'ai') this.openAiPanel(bookmarkId);
     }
 
+    async openCreateProblem(bookmarkId) {
+      const bookmark = bookmarkId ? this.store.state.bookmarks[bookmarkId] : null;
+      const titleElement = this.shadow.getElementById('ptafCreateTitle');
+      const saveButton = this.shadow.getElementById('ptafCreateSave');
+      if (bookmark) {
+        const snapshot = await this.snapshotStore.get(bookmark.id);
+        this.createDraft = draftFromLocalSnapshot(bookmark, snapshot);
+        this.editingLocalId = bookmark.id;
+        if (titleElement) titleElement.textContent = '编辑题目内容';
+        if (saveButton) saveButton.textContent = '保存修改';
+      } else {
+        const lastType = this.store.state.settings.lastCreateType || 'single_choice';
+        this.createDraft = defaultCreateDraft(lastType);
+        this.createDraft.folderIds = [this.store.state.settings.defaultFolderId || Core.DEFAULT_FOLDER_ID];
+        this.editingLocalId = '';
+        if (titleElement) titleElement.textContent = '新建题目';
+        if (saveButton) saveButton.textContent = '保存到收藏夹';
+      }
+      this.renderCreateForm();
+      this.openModal('create');
+      const focusTarget = this.shadow.getElementById('ptafCreateTitleInput');
+      if (focusTarget) focusTarget.focus();
+    }
+
+    renderCreateForm() {
+      const body = this.shadow.getElementById('ptafCreateBody');
+      if (!body) return;
+      const draft = this.createDraft;
+      const typeChips = LOCAL_CREATE_TYPES
+        .map((type) => '<button class="ptaf-create-type ' + (draft.type === type ? 'is-active' : '') + '" type="button" data-ptaf-create-type="' + type + '">' + escapeHtml(Core.typeLabel(type)) + '</button>')
+        .join('');
+      const folders = Object.values(this.store.state.folders)
+        .sort((a, b) => Number(b.system) - Number(a.system) || a.name.localeCompare(b.name, 'zh-CN'));
+      const selectedFolders = draft.folderIds || [];
+      const folderChecks = folders
+        .map((folder) => '<label class="ptaf-check"><input type="checkbox" data-ptaf-create-folder value="' + escapeHtml(folder.id) + '"' + (selectedFolders.includes(folder.id) ? ' checked' : '') + '>' + escapeHtml(folder.name) + '</label>')
+        .join('');
+      const setNames = Core.unique(Object.values(this.store.state.bookmarks).map((bookmark) => bookmark.problemSetName)).filter(Boolean);
+      const statusOptions = Object.entries(Core.STATUS_LABELS)
+        .map(([value, label]) => '<option value="' + value + '"' + (draft.status === value ? ' selected' : '') + '>' + escapeHtml(label) + '</option>')
+        .join('');
+      body.innerHTML = [
+        '<div class="ptaf-field"><label>题型</label><div class="ptaf-create-types">' + typeChips + '</div></div>',
+        '<div class="ptaf-create-grid">',
+        '<div class="ptaf-field"><label for="ptafCreateLabelInput">题号</label><input class="ptaf-input" id="ptafCreateLabelInput" value="' + escapeHtml(draft.label) + '" placeholder="例如 7-1"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateSetInput">所属题目集</label><input class="ptaf-input" id="ptafCreateSetInput" list="ptafCreateSetOptions" value="' + escapeHtml(draft.setName) + '" placeholder="例如 本地题库 / 数据结构"><datalist id="ptafCreateSetOptions">' + setNames.map((name) => '<option value="' + escapeHtml(name) + '"></option>').join('') + '</datalist></div>',
+        '</div>',
+        '<div class="ptaf-field"><label for="ptafCreateTitleInput">标题</label><input class="ptaf-input" id="ptafCreateTitleInput" value="' + escapeHtml(draft.title) + '" placeholder="题目标题"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateStemInput">题干</label><textarea class="ptaf-textarea ptaf-create-stem" id="ptafCreateStemInput" rows="7" placeholder="支持 Markdown：**加粗**、列表、代码块。">' + escapeHtml(draft.stem) + '</textarea></div>',
+        '<div id="ptafCreateDynamic"></div>',
+        '<div class="ptaf-create-grid">',
+        '<div class="ptaf-field"><label for="ptafCreateTags">标签</label><input class="ptaf-input" id="ptafCreateTags" value="' + escapeHtml(draft.tags) + '" placeholder="用逗号分隔"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateStatus">学习状态</label><select class="ptaf-select" id="ptafCreateStatus">' + statusOptions + '</select></div>',
+        '</div>',
+        '<div class="ptaf-field"><label>收藏到</label><div class="ptaf-check-list">' + folderChecks + '</div></div>',
+        '<details class="ptaf-details"><summary>备注</summary><textarea class="ptaf-textarea" id="ptafCreateNote" rows="2" placeholder="备注只保存在本地">' + escapeHtml(draft.note) + '</textarea></details>',
+        '<div class="ptaf-card-meta">题目会作为“本地创建”的收藏保存在浏览器中，可随时编辑；题干和解析支持 Markdown。</div>',
+      ].join('');
+      this.renderCreateDynamic();
+    }
+
+    renderCreateDynamic() {
+      const container = this.shadow.getElementById('ptafCreateDynamic');
+      if (!container) return;
+      const draft = this.createDraft;
+      const blocks = [];
+      const textarea = (id, label, value, rows, placeholder, extraClass) => '<div class="ptaf-field"><label for="' + id + '">' + escapeHtml(label) + '</label><textarea class="ptaf-textarea ' + (extraClass || '') + '" id="' + id + '" rows="' + rows + '" placeholder="' + escapeHtml(placeholder || '') + '">' + escapeHtml(value || '') + '</textarea></div>';
+      if (isChoiceDraft(draft)) {
+        blocks.push(textarea('ptafCreateOptions', '选项（每行一个，A. 开头）', draft.optionsText, 6, 'A. 选项内容'));
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateMyAnswer">我的作答</label><input class="ptaf-input" id="ptafCreateMyAnswer" value="' + escapeHtml(draft.myAnswer) + '" placeholder="' + (draft.type === 'multiple_choice' ? '例如 AB' : '例如 A') + '"></div>');
+      } else if (draft.type === 'true_false') {
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateMyAnswer">我的作答</label><select class="ptaf-select" id="ptafCreateMyAnswer"><option value="">未作答</option><option value="正确"' + (draft.myAnswer === '正确' ? ' selected' : '') + '>正确</option><option value="错误"' + (draft.myAnswer === '错误' ? ' selected' : '') + '>错误</option></select></div>');
+      } else if (draft.type === 'fill_blank') {
+        blocks.push(textarea('ptafCreateMyAnswer', '我的作答（每行一个空，按顺序）', draft.myAnswer, 3, '第一空的答案'));
+      } else if (draft.type === 'programming' || draft.type === 'function') {
+        blocks.push('<div class="ptaf-create-grid">' + textarea('ptafCreateSamplesIn', '输入样例', draft.samplesIn, 5, '可留空') + textarea('ptafCreateSamplesOut', '输出样例', draft.samplesOut, 5, '可留空') + '</div>');
+        blocks.push(textarea('ptafCreateHints', '数据范围与提示（可选，支持 Markdown）', draft.hints, 3, '例如 1 ≤ n ≤ 10^5'));
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateLanguage">语言</label><input class="ptaf-input" id="ptafCreateLanguage" value="' + escapeHtml(draft.language) + '" placeholder="C / C++ / Java / Python"></div>');
+        blocks.push(textarea('ptafCreateMyCode', '我的作答代码（可选）', draft.myCode, 10, '粘贴自己的代码', 'ptaf-create-code'));
+        blocks.push(textarea('ptafCreateReferenceCode', '参考代码（可选，保存在“参考答案与解析”）', draft.referenceCode, 10, '粘贴参考实现', 'ptaf-create-code'));
+      }
+      if (draft.type !== 'programming' && draft.type !== 'function') {
+        blocks.push(textarea('ptafCreateOfficial', '参考答案（可选）', draft.officialAnswer, 3, '标准答案'));
+      }
+      blocks.push(textarea('ptafCreateExplanation', '答案解析（可选，支持 Markdown）', draft.explanation, 3, '解析、易错点等'));
+      container.innerHTML = blocks.join('');
+    }
+
+    captureCreateDraft() {
+      if (!this.createDraft) return;
+      const assign = (key, id) => {
+        const element = this.shadow.getElementById(id);
+        if (element) this.createDraft[key] = element.value;
+      };
+      assign('label', 'ptafCreateLabelInput');
+      assign('title', 'ptafCreateTitleInput');
+      assign('setName', 'ptafCreateSetInput');
+      assign('stem', 'ptafCreateStemInput');
+      assign('tags', 'ptafCreateTags');
+      assign('note', 'ptafCreateNote');
+      assign('status', 'ptafCreateStatus');
+      assign('optionsText', 'ptafCreateOptions');
+      assign('myAnswer', 'ptafCreateMyAnswer');
+      assign('officialAnswer', 'ptafCreateOfficial');
+      assign('explanation', 'ptafCreateExplanation');
+      assign('samplesIn', 'ptafCreateSamplesIn');
+      assign('samplesOut', 'ptafCreateSamplesOut');
+      assign('hints', 'ptafCreateHints');
+      assign('language', 'ptafCreateLanguage');
+      assign('referenceCode', 'ptafCreateReferenceCode');
+      assign('myCode', 'ptafCreateMyCode');
+      const folderInputs = Array.from(this.shadow.querySelectorAll('[data-ptaf-create-folder]'));
+      if (folderInputs.length) {
+        this.createDraft.folderIds = folderInputs.filter((input) => input.checked).map((input) => input.value);
+      }
+    }
+
+    switchCreateType(type) {
+      if (!LOCAL_CREATE_TYPES.includes(type)) return;
+      this.captureCreateDraft();
+      const previous = this.createDraft;
+      const next = defaultCreateDraft(type);
+      const kindOf = (value) => (value === 'single_choice' || value === 'multiple_choice' ? 'choice' : value);
+      const keepAnswer = kindOf(previous.type) === kindOf(type);
+      next.label = previous.label;
+      next.title = previous.title;
+      next.setName = previous.setName;
+      next.tags = previous.tags;
+      next.note = previous.note;
+      next.status = previous.status;
+      next.stem = previous.stem;
+      next.officialAnswer = previous.officialAnswer;
+      next.explanation = previous.explanation;
+      next.samplesIn = previous.samplesIn;
+      next.samplesOut = previous.samplesOut;
+      next.hints = previous.hints;
+      next.language = previous.language;
+      next.referenceCode = previous.referenceCode;
+      next.myCode = previous.myCode;
+      next.folderIds = (previous.folderIds || []).slice();
+      next.myAnswer = keepAnswer ? previous.myAnswer : '';
+      next.optionsText = previous.optionsText && previous.optionsText.trim() ? previous.optionsText : next.optionsText;
+      this.createDraft = next;
+      this.store.state.settings.lastCreateType = type;
+      this.store.save(true);
+      this.renderCreateForm();
+    }
+
+    loadCreateTemplate() {
+      this.captureCreateDraft();
+      const draft = this.createDraft;
+      const template = createTemplateText(draft.type);
+      if (!Core.normalizeWhitespace(draft.stem) && template.stem) draft.stem = template.stem;
+      if (!Core.normalizeWhitespace(draft.officialAnswer) && template.officialAnswer) draft.officialAnswer = template.officialAnswer;
+      if (!draft.samplesIn && template.samplesIn) draft.samplesIn = template.samplesIn;
+      if (!draft.samplesOut && template.samplesOut) draft.samplesOut = template.samplesOut;
+      if (!draft.hints && template.hints) draft.hints = template.hints;
+      if (isChoiceDraft(draft) && !parseOptionText(draft.optionsText).length) draft.optionsText = 'A. \nB. \nC. \nD. ';
+      this.renderCreateForm();
+      this.toast('已填入模板占位内容，替换成你自己的题目即可');
+    }
+
+    createFolderForCreate() {
+      this.captureCreateDraft();
+      const name = prompt('新建收藏夹名称');
+      if (!name || !name.trim()) return;
+      try {
+        const folder = this.store.addFolder(name.trim(), null);
+        this.createDraft.folderIds = Core.unique([...(this.createDraft.folderIds || []), folder.id]);
+        this.renderCreateForm();
+        this.toast('已创建收藏夹：' + folder.name);
+      } catch (error) {
+        this.toast(error.message || '创建收藏夹失败', 'error');
+      }
+    }
+
+    async saveCreateProblem() {
+      this.captureCreateDraft();
+      const draft = this.createDraft;
+      const title = Core.normalizeWhitespace(draft.title) || Core.normalizeWhitespace(draft.label) || '未命名题目';
+      if (!Core.normalizeWhitespace(draft.stem) && !Core.normalizeWhitespace(draft.title)) {
+        this.toast('请至少填写标题或题干', 'error');
+        return;
+      }
+      const existing = this.editingLocalId ? this.store.state.bookmarks[this.editingLocalId] : null;
+      const setName = Core.normalizeWhitespace(draft.setName) || '本地题库';
+      const host = (typeof location !== 'undefined' && location.host) || 'pintia.cn';
+      const problemSetId = existing && existing.problemSetId ? existing.problemSetId : Core.localProblemSetId(setName);
+      const problemId = existing && existing.problemId ? existing.problemId : Core.createLocalProblemId();
+      const url = 'https://' + host + '/problem-sets/' + encodeURIComponent(problemSetId) + '/problems/' + problemId;
+      const folderIds = (draft.folderIds || []).length ? draft.folderIds.slice() : [this.store.state.settings.defaultFolderId || Core.DEFAULT_FOLDER_ID];
+      const tags = String(draft.tags || '').split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+      const created = Core.createBookmark({
+        id: existing ? existing.id : undefined,
+        problemId,
+        problemSetId,
+        problemSetName: setName,
+        host,
+        url,
+        title,
+        label: Core.normalizeWhitespace(draft.label),
+        type: draft.type,
+        folderIds,
+        tags,
+        note: draft.note,
+        status: draft.status,
+        createdAt: existing ? existing.createdAt : undefined,
+      }, { preserveId: true, preserveTimes: Boolean(existing) });
+      const snapshot = buildLocalSnapshot(created, draft);
+      const baseAnswer = (existing && existing.answer) || created.answer;
+      const baseAi = (baseAnswer && baseAnswer.ai) || {};
+      created.answer = Object.assign({}, baseAnswer, {
+        visibility: 'revealed',
+        officialAnswer: Core.normalizeWhitespace(draft.officialAnswer),
+        explanation: Core.normalizeWhitespace(draft.explanation),
+        source: 'manual',
+        revealedAt: snapshot.capturedAt,
+        lastCheckedAt: snapshot.capturedAt,
+      });
+      const manualCode = Core.normalizeWhitespace(draft.referenceCode);
+      const manualOnly = manualCode && !baseAi.analysis && !baseAi.answer && !baseAi.skillId;
+      created.answer.ai = Core.normalizeAi(Object.assign({}, baseAi, {
+        referenceCode: draft.referenceCode || '',
+        skillId: manualOnly ? 'manual' : baseAi.skillId,
+        model: manualOnly ? '手动录入' : baseAi.model,
+        generatedAt: manualOnly ? snapshot.capturedAt : baseAi.generatedAt,
+      }));
+      const saved = this.store.upsert(created);
+      this.store.updateBookmark(saved.id, {
+        title,
+        label: Core.normalizeWhitespace(draft.label),
+        type: Core.normalizeProblemType(draft.type),
+        problemSetId,
+        problemSetName: setName,
+        folderIds,
+        tags,
+        note: Core.normalizeWhitespace(draft.note),
+        status: Core.STATUS_LABELS[draft.status] ? draft.status : 'todo',
+        content: {
+          status: 'full',
+          capturedAt: snapshot.capturedAt,
+          contentHash: snapshot.contentHash,
+          url,
+          title,
+          answerVisibility: 'revealed',
+        },
+        answer: created.answer,
+        submissions: existing ? existing.submissions || [] : [],
+      });
+      this.store.state.settings.lastCreateType = Core.normalizeProblemType(draft.type);
+      this.store.save(true);
+      await this.snapshotStore.put(snapshot);
+      const wasEditing = Boolean(existing);
+      this.editingLocalId = '';
+      this.render();
+      this.closeModal('create');
+      if (wasEditing && this.isModalOpen('snapshot')) await this.openSnapshot(saved.id);
+      this.toast(wasEditing ? '题目已更新' : '题目已保存到收藏夹');
+    }
     openEditor(bookmarkId) {
       const bookmark = this.store.state.bookmarks[bookmarkId];
       if (!bookmark) return;
@@ -2965,6 +3513,8 @@
     }
 
     renderEditor(bookmark, forceFolderId) {
+      const captureButton = this.shadow.getElementById('ptafCaptureBookmark');
+      if (captureButton) captureButton.textContent = Core.isLocalProblem(bookmark) ? '编辑题目内容' : '更新快照与提交';
       const body = this.shadow.getElementById('ptafEditorBody');
       const forcedFolderId = forceFolderId || this.editorForcedFolderId || '';
       const folders = Object.values(this.store.state.folders)
@@ -3034,6 +3584,11 @@
     }
 
     async captureCurrentBookmark() {
+      const currentEditBookmark = this.store.state.bookmarks[this.currentEditId];
+      if (currentEditBookmark && Core.isLocalProblem(currentEditBookmark)) {
+        await this.openCreateProblem(currentEditBookmark.id);
+        return;
+      }
       const bookmark = this.store.state.bookmarks[this.currentEditId];
       if (!bookmark) return;
       await this.captureBookmark(bookmark.id);
@@ -3101,6 +3656,7 @@
       }
 
       const isCodeProblem = ['function', 'programming'].includes(Core.normalizeProblemType(bookmark.type));
+      const localProblem = Core.isLocalProblem(bookmark);
       const latestSubmission = (bookmark.submissions || [])[0];
       const judgeConstraints = snapshot.judgeConstraints || {};
       const judgeCriteria = [
@@ -3193,7 +3749,7 @@
         <div class="ptaf-snapshot-layout ${layoutClass}" style="--ptaf-split-left: ${Math.round(splitRatio * 100)}%">
           <section class="ptaf-snapshot-pane ptaf-snapshot-original-pane">
             <div class="ptaf-card-meta">保存时间：${escapeHtml(Core.formatDate(snapshot.capturedAt))} · ${escapeHtml(snapshot.contentHash || '')}</div>
-            <div class="ptaf-field"><label>原页面快照</label><iframe class="ptaf-snapshot-frame" sandbox="allow-same-origin" srcdoc="${escapeHtml(srcdoc)}"></iframe></div>
+            <div class="ptaf-field"><label>${localProblem ? '题目内容' : '原页面快照'}</label><iframe class="ptaf-snapshot-frame" sandbox="allow-same-origin" srcdoc="${escapeHtml(srcdoc)}"></iframe></div>
           </section>
           <div class="ptaf-split-resizer" data-ptaf-split-resizer title="拖动调整左右宽度"></div>
           <section class="ptaf-snapshot-pane ptaf-snapshot-answer-pane">
@@ -3207,6 +3763,12 @@
       if (snapshotFrame && !isCodeProblem) this.bindSnapshotIframeInteractions(snapshotFrame);
       const layoutButton = this.shadow.getElementById('ptafToggleSnapshotLayout');
       if (layoutButton) layoutButton.textContent = this.snapshotLayout === 'split' ? '单栏查看' : '并排查看';
+      const originalButton = this.shadow.getElementById('ptafOpenOriginal');
+      const refreshButton = this.shadow.getElementById('ptafRefreshSnapshot');
+      const editLocalButton = this.shadow.getElementById('ptafEditLocalProblem');
+      if (originalButton) originalButton.hidden = localProblem;
+      if (refreshButton) refreshButton.hidden = localProblem;
+      if (editLocalButton) editLocalButton.hidden = !localProblem;
       this.updateSnapshotNavButtons();
     }
     beginSnapshotAnswerEdit() {
@@ -3961,6 +4523,7 @@
     if (typeof GM_registerMenuCommand !== 'function') return;
     GM_registerMenuCommand('打开 PTA 收藏夹', () => ui.openDrawer());
     GM_registerMenuCommand('收藏当前题目', () => collectCurrentProblem());
+    GM_registerMenuCommand('新建题目（快速创建）', () => ui.openCreateProblem());
     GM_registerMenuCommand('导出 Markdown', () => ui.exportMarkdown());
     GM_registerMenuCommand('导出 JSON 备份', () => ui.exportJson());
     GM_registerMenuCommand('快捷键说明', () => ui.showShortcutHelp());
