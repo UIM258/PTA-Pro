@@ -24,6 +24,13 @@ GitHub：https://github.com/UIM258/PTA-Pro
 
 GreasyFork：https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9
 
+## 当前发布状态
+
+- 当前版本：0.38.2
+- GitHub Raw：已同步
+- GreasyFork：已同步（2026-10-24 核验更新地址返回 0.38.2）
+- 构建文件：`outputs/pta-favorites.user.js`
+
 ## 脚本安装地址
 
 GitHub Raw：https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js
