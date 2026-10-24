@@ -2,11 +2,13 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.37.0
-// @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、本地快照、判题记录、AI 解析与导入导出。
+// @version      0.38.2
+// @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、快速新建题目、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
 // @supportURL   https://github.com/UIM258/PTA-Pro/issues
+// @updateURL    https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js
+// @downloadURL  https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js
 // @license      MIT
 // @match        https://*.pintia.cn/*
 // @match        https://pintia.cn/*
@@ -38,8 +40,11 @@
   const STORAGE_VERSION = 1;
   const DEFAULT_FOLDER_ID = 'default';
 
+  const LOCAL_PROBLEM_PREFIX = 'local-';
+
   const DEFAULT_SHORTCUTS = {
     toggleDrawer: 'Alt+Shift+F',
+    createProblem: 'Alt+Shift+N',
     toggleCurrentFavorite: 'Alt+Shift+S',
     toggleBatchMode: 'Alt+Shift+B',
     editSnapshotAnswer: 'Alt+Shift+E',
@@ -54,6 +59,7 @@
     multiple_choice: '多选题',
     true_false: '判断题',
     fill_blank: '填空题',
+    program_fill: '程序填空题',
     function: '函数题',
     programming: '编程题',
     short_answer: '简答题',
@@ -77,6 +83,7 @@
     ['single_choice', /单选|单项选择题|single\s*choice/i],
     ['multiple_choice', /多选|多项选择题|multiple\s*choice/i],
     ['true_false', /判断|正误|true\s*\/\s*false|true\s*or\s*false/i],
+    ['program_fill', /程序填空|代码填空|fill\s*in\s*(?:the\s*)?code|code\s*completion/i],
     ['fill_blank', /填空|fill\s*in\s*the\s*blank/i],
     ['function', /函数题|函数设计|function\s+problem|function\s+question/i],
     ['programming', /编程|程序设计|programming|code\s+problem/i],
@@ -140,6 +147,7 @@
       updatedAt: createdAt,
       settings: {
         defaultFolderId: DEFAULT_FOLDER_ID,
+        lastCreateType: 'single_choice',
         snapshotByDefault: true,
         openDetailAfterCollect: false,
         maxSubmissions: 8,
@@ -665,6 +673,25 @@
     return Boolean(bookmark && Array.isArray(bookmark.folderIds) && bookmark.folderIds.length > 0);
   }
 
+  function isLocalProblem(bookmark) {
+    if (!bookmark) return false;
+    if (bookmark.local === true) return true;
+    return String(bookmark.problemId || '').startsWith(LOCAL_PROBLEM_PREFIX);
+  }
+
+  function localProblemSetId(name) {
+    const text = normalizeWhitespace(name) || '本地创建';
+    let hash = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+    }
+    return LOCAL_PROBLEM_PREFIX + 'set-' + hash.toString(36);
+  }
+
+  function createLocalProblemId() {
+    return LOCAL_PROBLEM_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
   function groupBookmarks(state) {
     const bookmarks = Object.values(state.bookmarks || {}).filter(isCollected);
     const setMap = new Map();
@@ -1028,6 +1055,10 @@
     listUserFolders,
     groupBookmarks,
     isCollected,
+    isLocalProblem,
+    localProblemSetId,
+    createLocalProblemId,
+    LOCAL_PROBLEM_PREFIX,
     matchesSelection,
     bookmarkOrderKey,
     sortBookmarksByStoredOrder,
@@ -1064,7 +1095,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.37.0';
+  const APP_VERSION = '0.38.2';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -1072,6 +1103,7 @@
   const PROJECT_LINKS = {
     repository: 'https://github.com/UIM258/PTA-Pro',
     script: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/outputs/pta-favorites.user.js',
+    scriptMirror: 'https://cdn.jsdelivr.net/gh/UIM258/PTA-Pro@main/outputs/pta-favorites.user.js',
     issues: 'https://github.com/UIM258/PTA-Pro/issues',
     greasyfork: 'https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%E5%A4%B9',
     sponsorQr: 'https://raw.githubusercontent.com/UIM258/PTA-Pro/main/docs/assets/sponsor-qr.jpg',
@@ -1099,6 +1131,7 @@
     toggleDrawer: '打开/关闭收藏夹',
     toggleCurrentFavorite: '收藏/取消收藏当前题目',
     toggleBatchMode: '切换批量管理',
+    createProblem: '新建题目（快速创建）',
     editSnapshotAnswer: '编辑快照中的我的作答',
     snapshotPrev: '快照上一题',
     snapshotNext: '快照下一题',
@@ -1229,6 +1262,10 @@
           method: 'GET',
           url,
           timeout: Number(timeoutMs) || 15000,
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
           onload: (response) => {
             if (response.status < 200 || response.status >= 300) {
               reject(new Error(`HTTP ${response.status}`));
@@ -1259,6 +1296,13 @@
       if (a[index] !== b[index]) return a[index] > b[index] ? 1 : -1;
     }
     return 0;
+  }
+
+  function currentScriptVersion() {
+    if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) {
+      return String(GM_info.script.version).trim();
+    }
+    return APP_VERSION;
   }
 
   function requestAiCompletion(action, contextText, options) {
@@ -1614,6 +1658,283 @@
     </div>`;
   }
 
+  const LOCAL_CREATE_TYPES = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank', 'program_fill', 'function', 'programming', 'short_answer'];
+  const CHOICE_LETTERS = 'ABCDEFGHIJKLMNOP';
+
+  function isChoiceDraft(draft) {
+    return Boolean(draft) && (draft.type === 'single_choice' || draft.type === 'multiple_choice');
+  }
+
+  function parseOptionText(text) {
+    const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
+    return lines.map((line, index) => {
+      const match = line.match(/^([A-Za-z])\s*[.、:：)）]\s*(.*)$/);
+      const letter = match ? match[1].toUpperCase() : (CHOICE_LETTERS[index] || String(index + 1));
+      return { letter, text: (match ? match[2] : line).trim() };
+    });
+  }
+
+  function splitAnswerLines(text) {
+    return String(text || '').replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
+  }
+
+  function compactOptionAnswer(option) {
+    return option.letter + '.' + String(option.text || '').replace(/\s+/g, '');
+  }
+
+  function defaultCreateDraft(type) {
+    const resolved = LOCAL_CREATE_TYPES.includes(type) ? type : 'single_choice';
+    const choice = resolved === 'single_choice' || resolved === 'multiple_choice';
+    const code = resolved === 'programming' || resolved === 'function';
+    return {
+      type: resolved,
+      label: '',
+      title: '',
+      setName: '',
+      tags: '',
+      note: '',
+      status: 'todo',
+      stem: '',
+      optionsText: choice ? 'A. \nB. \nC. \nD. ' : '',
+      myAnswer: '',
+      officialAnswer: '',
+      explanation: '',
+      samplesIn: '',
+      samplesOut: '',
+      hints: '',
+      language: code ? 'C' : '',
+      referenceCode: '',
+      myCode: '',
+      folderIds: [],
+    };
+  }
+
+  function createTemplateText(type) {
+    if (type === 'single_choice' || type === 'multiple_choice') {
+      return {
+        stem: '这里填写题干。支持 Markdown：**加粗**、*斜体*、列表、行内代码和代码块。',
+        officialAnswer: type === 'multiple_choice' ? 'A' : 'A',
+        explanation: '',
+      };
+    }
+    if (type === 'true_false') {
+      return { stem: '这里填写判断题题干。', officialAnswer: '正确', explanation: '' };
+    }
+    if (type === 'fill_blank') {
+      return { stem: '这里填写题干，空缺处用 ______ 表示。', officialAnswer: '', explanation: '' };
+    }
+    if (type === 'program_fill') {
+      return {
+        stem: '阅读下列程序，在空缺处填写正确代码。\n\n```c\n#include <stdio.h>\n\nint main(void) {\n    int n;\n    scanf("%d", &n);\n    printf("%d\\n", ____);\n    return 0;\n}\n```',
+        officialAnswer: '',
+        explanation: '',
+        language: 'C',
+      };
+    }
+    if (type === 'function') {
+      return {
+        stem: '请实现如下函数：\n\n```c\nint example(int n);\n```\n\n函数要求说明。',
+        officialAnswer: '',
+        explanation: '',
+        samplesIn: '',
+        samplesOut: '',
+        hints: '',
+      };
+    }
+    if (type === 'programming') {
+      return {
+        stem: '题目描述：\n\n- 输入格式\n- 输出格式\n- 数据范围',
+        officialAnswer: '',
+        explanation: '',
+        samplesIn: '6\n-2 11 -4 13 -5 -2',
+        samplesOut: '20',
+        hints: '1 ≤ n ≤ 10^5',
+      };
+    }
+    return { stem: '这里填写简答题题干。', officialAnswer: '', explanation: '' };
+  }
+
+  function localChoiceGroups(draft) {
+    if (!isChoiceDraft(draft)) return [];
+    const options = parseOptionText(draft.optionsText);
+    if (!options.length) return [];
+    const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+    return [{
+      name: 'ptafLocalChoice',
+      kind: draft.type === 'multiple_choice' ? 'checkbox' : 'radio',
+      prompt: Core.normalizeWhitespace(draft.stem).slice(0, 200),
+      options: options.map((option) => ({
+        value: option.letter,
+        answer: compactOptionAnswer(option),
+        label: compactOptionAnswer(option),
+        checked: selected.includes(option.letter),
+      })),
+    }];
+  }
+
+  function localSnapshotAnswers(draft) {
+    const prompt = Core.normalizeWhitespace(draft.stem).slice(0, 200) || '本地创建题目';
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+      const kind = draft.type === 'multiple_choice' ? 'checkbox' : 'radio';
+      return options
+        .filter((option) => selected.includes(option.letter))
+        .map((option) => ({ kind, prompt, answer: compactOptionAnswer(option) }));
+    }
+    if (draft.type === 'program_fill') {
+      return programFillAnswers(localProgramFillBlank(draft));
+    }
+    const lines = splitAnswerLines(draft.myAnswer);
+    if (!lines.length) return [];
+    const kind = draft.type === 'true_false' ? 'radio' : 'text';
+    return lines.map((line) => ({ kind, prompt, answer: line }));
+  }
+
+  function localProgramFillBlank(draft) {
+    if (!draft || draft.type !== 'program_fill') return null;
+    const answerLines = splitAnswerLines(draft.myAnswer);
+    const stem = String(draft.stem || '');
+    const fenced = stem.match(/```(?:([a-zA-Z0-9+#.-]+)[^\n]*)?\r?\n([\s\S]*?)```/);
+    const templateCode = fenced ? fenced[2].replace(/\s+$/g, '') : '';
+    const codeLines = templateCode ? templateCode.split('\n') : [];
+    let nextBlankLine = 0;
+    const blanks = answerLines.map((answer, index) => {
+      let lineIndex = -1;
+      for (let candidate = nextBlankLine; candidate < codeLines.length; candidate += 1) {
+        if (codeLines[candidate].includes('____')) {
+          lineIndex = candidate;
+          break;
+        }
+      }
+      if (lineIndex >= 0) nextBlankLine = lineIndex + 1;
+      const codeLine = lineIndex >= 0 ? codeLines[lineIndex] : `第 ${index + 1} 空：____`;
+      return {
+        index: index + 1,
+        lineNumber: lineIndex >= 0 ? lineIndex + 1 : null,
+        codeLine,
+        prompt: codeLine,
+        answer,
+        referenceAnswer: '',
+        score: null,
+        maxScore: null,
+      };
+    });
+    return {
+      language: fenced && fenced[1] ? fenced[1] : 'C',
+      templateCode,
+      totalScore: null,
+      blanks,
+    };
+  }
+
+  function localStemHtml(draft) {
+    const parts = [];
+    const heading = (draft.label ? draft.label + ' ' : '') + (draft.title || '未命名题目');
+    parts.push('<div class="ptaf-local-problem">');
+    parts.push('<h2 class="ptaf-local-title">' + escapeHtml(heading) + '</h2>');
+    if (draft.stem) parts.push('<div class="rendered-markdown">' + renderMarkdownHtml(draft.stem) + '</div>');
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      const selected = String(draft.myAnswer || '').toUpperCase().match(/[A-Z]/g) || [];
+      const kind = draft.type === 'multiple_choice' ? 'checkbox' : 'radio';
+      if (options.length) {
+        parts.push('<div class="ptaf-local-options">' + options.map((option) => '<label class="ptaf-local-option"><input type="' + kind + '" name="ptafLocalChoice" value="' + escapeHtml(option.letter) + '"' + (selected.includes(option.letter) ? ' checked' : '') + '> <span>' + escapeHtml(option.letter + '. ' + option.text) + '</span></label>').join('') + '</div>');
+      }
+    }
+    if (draft.type === 'fill_blank' || draft.type === 'program_fill') {
+      const answers = splitAnswerLines(draft.myAnswer);
+      parts.push('<div class="ptaf-local-blanks">' + (answers.length ? answers : ['']).map((value, index) => '<label class="ptaf-local-blank"><span>第 ' + (index + 1) + ' 空</span><input type="text" value="' + escapeHtml(value) + '"></label>').join('') + '</div>');
+    }
+    if (draft.samplesIn) parts.push('<h3 class="ptaf-local-heading">输入样例</h3><pre class="ptaf-local-pre">' + escapeHtml(draft.samplesIn) + '</pre>');
+    if (draft.samplesOut) parts.push('<h3 class="ptaf-local-heading">输出样例</h3><pre class="ptaf-local-pre">' + escapeHtml(draft.samplesOut) + '</pre>');
+    if (draft.hints) parts.push('<h3 class="ptaf-local-heading">数据范围与提示</h3><div class="rendered-markdown">' + renderMarkdownHtml(draft.hints) + '</div>');
+    parts.push('</div>');
+    return parts.join('\n');
+  }
+
+  function localStemMarkdown(draft) {
+    const lines = [];
+    lines.push('# ' + ((draft.label ? draft.label + ' ' : '') + (draft.title || '未命名题目')));
+    if (draft.stem) lines.push('', draft.stem);
+    if (isChoiceDraft(draft)) {
+      const options = parseOptionText(draft.optionsText);
+      if (options.length) {
+        lines.push('', '## 选项');
+        options.forEach((option) => lines.push('- ' + option.letter + '. ' + option.text));
+      }
+    }
+    if (draft.samplesIn) lines.push('', '## 输入样例', '```', draft.samplesIn, '```');
+    if (draft.samplesOut) lines.push('', '## 输出样例', '```', draft.samplesOut, '```');
+    if (draft.hints) lines.push('', '## 数据范围与提示', draft.hints);
+    if (draft.type === 'fill_blank' || draft.type === 'program_fill') {
+      const answers = splitAnswerLines(draft.myAnswer);
+      if (answers.length) lines.push('', '## 我的填空', answers.map((value, index) => (index + 1) + '. ' + value).join('\n'));
+    }
+    return lines.join('\n').trim();
+  }
+
+  function buildLocalSnapshot(bookmark, draft) {
+    const capturedAt = Date.now();
+    const html = localStemHtml(draft);
+    const markdown = localStemMarkdown(draft);
+    return {
+      bookmarkId: bookmark.id,
+      capturedAt,
+      url: bookmark.url,
+      capturedFromUrl: '',
+      capturedFromProblemId: bookmark.problemId || '',
+      title: bookmark.title,
+      html,
+      markdown,
+      text: markdown,
+      answers: localSnapshotAnswers(draft),
+      programFillBlank: localProgramFillBlank(draft),
+      choiceGroups: localChoiceGroups(draft),
+      codeDraft: draft.myCode || '',
+      judgeConstraints: {},
+      pageStyles: {},
+      snapshotVersion: 2,
+      localCreated: true,
+      localDraft: Object.assign({}, draft, { folderIds: (draft.folderIds || []).slice() }),
+      answerVisibility: 'revealed',
+      officialAnswerExcerpt: '',
+      explanationExcerpt: '',
+      contentHash: Core.computeContentHash(markdown.slice(0, 200000)),
+      appVersion: APP_VERSION,
+    };
+  }
+
+  function draftFromLocalSnapshot(bookmark, snapshot) {
+    if (snapshot && snapshot.localDraft && typeof snapshot.localDraft === 'object') {
+      return Object.assign(defaultCreateDraft(bookmark.type), snapshot.localDraft, {
+        type: Core.normalizeProblemType(bookmark.type),
+        title: snapshot.localDraft.title || bookmark.title || '',
+        label: snapshot.localDraft.label || bookmark.label || '',
+        setName: snapshot.localDraft.setName || bookmark.problemSetName || '',
+        tags: snapshot.localDraft.tags || (bookmark.tags || []).join(', '),
+        note: snapshot.localDraft.note || bookmark.note || '',
+        status: snapshot.localDraft.status || bookmark.status || 'todo',
+        officialAnswer: snapshot.localDraft.officialAnswer != null && snapshot.localDraft.officialAnswer !== '' ? snapshot.localDraft.officialAnswer : (bookmark.answer && bookmark.answer.officialAnswer) || '',
+        explanation: snapshot.localDraft.explanation != null && snapshot.localDraft.explanation !== '' ? snapshot.localDraft.explanation : (bookmark.answer && bookmark.answer.explanation) || '',
+        referenceCode: snapshot.localDraft.referenceCode || (bookmark.answer && bookmark.answer.ai && bookmark.answer.ai.referenceCode) || '',
+        myCode: typeof snapshot.localCode === 'string' ? snapshot.localCode : snapshot.localDraft.myCode || '',
+      });
+    }
+    const draft = defaultCreateDraft(bookmark.type);
+    draft.title = bookmark.title || '';
+    draft.label = bookmark.label || '';
+    draft.setName = bookmark.problemSetName || '';
+    draft.tags = (bookmark.tags || []).join(', ');
+    draft.note = bookmark.note || '';
+    draft.status = bookmark.status || 'todo';
+    draft.stem = snapshot ? String(snapshot.markdown || snapshot.text || '') : '';
+    draft.myCode = snapshot && typeof snapshot.localCode === 'string' ? snapshot.localCode : (snapshot && snapshot.codeDraft) || '';
+    draft.officialAnswer = (bookmark.answer && bookmark.answer.officialAnswer) || '';
+    draft.explanation = (bookmark.answer && bookmark.answer.explanation) || '';
+    draft.referenceCode = (bookmark.answer && bookmark.answer.ai && bookmark.answer.ai.referenceCode) || '';
+    return draft;
+  }
   function safeFileName(value) {
     return String(value || 'export')
       .replace(/[\\/:*?"<>|]+/g, '-')
@@ -1696,13 +2017,55 @@
     if (ai.knowledgePoints.length) parts.push(section("knowledgePoints", "知识点", `<div class="ptaf-markdown"><ul>${ai.knowledgePoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul></div>`));
     const complexityText = [ai.complexity.time ? `时间：${ai.complexity.time}` : "", ai.complexity.space ? `空间：${ai.complexity.space}` : ""].filter(Boolean).join("；");
     if (complexityText) parts.push(section("complexity", "复杂度", escapeHtml(complexityText)));
-    return `<div class="ptaf-ai-reference"><div class="ptaf-ai-reference-head"><span class="ptaf-badge warning">AI 生成</span><span>${escapeHtml(ai.model || "未知模型")} · ${escapeHtml(Core.formatDate(ai.generatedAt))}</span><button class="ptaf-btn small danger" type="button" data-ptaf-ai-reference-delete>删除全部</button></div><div class="ptaf-ai-reference-body">${parts.join("")}</div></div>`;
+    return `<div class="ptaf-ai-reference"><div class="ptaf-ai-reference-head"><span class="ptaf-badge warning">${ai.skillId === 'manual' ? '手动录入' : 'AI 生成'}</span><span>${escapeHtml(ai.model || "未知模型")} · ${escapeHtml(Core.formatDate(ai.generatedAt))}</span><button class="ptaf-btn small danger" type="button" data-ptaf-ai-reference-delete>删除全部</button></div><div class="ptaf-ai-reference-body">${parts.join("")}</div></div>`;
   }
+  function sanitizeProblemTitle(value) {
+    const lines = String(value || '')
+      .replace(/\r\n?/g, '\n')
+      .split('\n')
+      .map((line) => Core.normalizeWhitespace(line))
+      .filter(Boolean);
+    const toolbarPattern = /(?:^|\s)(?:复制内容|复制代码)\s+格式\s+全屏\s+收起(?:\s|$)/;
+    let toolbarLine = -1;
+    let toolbarAt = -1;
+    for (let index = 0; index < lines.length; index += 1) {
+      const inlineMatch = lines[index].match(toolbarPattern);
+      if (inlineMatch) {
+        toolbarLine = index;
+        toolbarAt = inlineMatch.index;
+        break;
+      }
+      const joined = lines.slice(index, index + 4).join(' ');
+      if (/^(?:复制内容|复制代码)\s+格式\s+全屏\s+收起$/.test(joined)) {
+        toolbarLine = index;
+        toolbarAt = 0;
+        break;
+      }
+    }
+    const kept = toolbarLine >= 0 ? lines.slice(0, toolbarLine + 1) : lines.slice();
+    if (toolbarLine >= 0) {
+      if (toolbarAt > 0) kept[kept.length - 1] = kept[kept.length - 1].slice(0, toolbarAt).trim();
+      else kept.pop();
+    }
+    return Core.cleanProblemTitle(kept.filter(Boolean).join(' '));
+  }
+
+  function hasSnapshotTitleNoise(value) {
+    return /(?:复制内容|复制代码)\s+格式\s+全屏\s+收起/.test(Core.normalizeWhitespace(value));
+  }
+
   function bookmarkDisplayTitle(bookmark) {
     const label = Core.normalizeWhitespace(bookmark && bookmark.label);
-    const title = Core.normalizeWhitespace(bookmark && bookmark.title);
+    const title = sanitizeProblemTitle(bookmark && bookmark.title);
     if (!label || !title) return title || label;
-    return title.startsWith(label) ? title : `${label} ${title}`;
+    return title === label || title.startsWith(`${label} `) ? title : `${label} ${title}`;
+  }
+
+  function bookmarkCardTitle(bookmark) {
+    const label = Core.normalizeWhitespace(bookmark && bookmark.label);
+    const title = sanitizeProblemTitle(bookmark && bookmark.title);
+    if (label && title.startsWith(`${label} `)) return title.slice(label.length).trim();
+    return title;
   }
 
   function debounce(fn, delay) {
@@ -1980,6 +2343,215 @@
     return extractChoiceGroupsFromDom(template.content);
   }
 
+  const PROGRAM_FILL_FIELD_SELECTOR = [
+    'input:not([type])',
+    'input[type="text"]',
+    'input[type="number"]',
+    'textarea',
+    'select',
+    '[contenteditable="true"]',
+  ].join(', ');
+
+  function isProgramFillField(element) {
+    if (!element || isOurElement(element)) return false;
+    if (element.matches('.cm-content, .cm-editor, .cm-scroller, .cm-gutters, .cm-line, .cm-widgetBuffer, .cm-placeholder, .codeEditor_WDyZc')) return false;
+    if (element.tagName === 'INPUT') return !element.disabled && !['radio', 'checkbox', 'hidden', 'button', 'submit', 'reset', 'file', 'image'].includes(String(element.type || 'text').toLowerCase());
+    return !element.disabled && !element.readOnly;
+  }
+
+  function programFillValue(element) {
+    if (!element) return '';
+    if (element.tagName === 'SELECT') return Core.normalizeWhitespace(visibleText(element.options[element.selectedIndex]));
+    if (element.isContentEditable) return Core.normalizeWhitespace(element.innerText || element.textContent || '');
+    return Core.normalizeWhitespace(element.value || '');
+  }
+
+  function programFillLanguage(root) {
+    const languageNode = root.querySelector('[class*="languageName"], [data-language], [class*="language-"]');
+    const explicitText = Core.normalizeWhitespace(visibleText(languageNode));
+    const languageMatch = explicitText.match(/\[\s*([^\]]+?)\s*\]/);
+    if (languageMatch) return languageMatch[1];
+    if (languageNode && explicitText && explicitText.length <= 30) return explicitText.replace(/^\[\s*|\s*\]$/g, '');
+    const context = Core.normalizeWhitespace(visibleText(root.querySelector('[class*="codeEditor"], .cm-editor')));
+    const contextMatch = context.match(/\[\s*((?:C\+\+|C|Java|Python|Go|JavaScript)[^\]]*)\s*\]/i);
+    return contextMatch ? contextMatch[1] : detectLanguage(visibleText(root));
+  }
+
+  function programFillNearbyScore(field) {
+    const line = field.closest('.cm-line');
+    const widget = field.closest('.cm-widgetBuffer, [class*="widget"], [class*="score"]');
+    const container = widget || field.closest('span.inline-flex') || field.parentElement;
+    const texts = [
+      container && visibleText(container),
+      line && visibleText(line),
+      field.getAttribute('aria-label'),
+      field.title,
+      field.parentElement && visibleText(field.parentElement),
+    ].filter(Boolean).map((value) => Core.normalizeWhitespace(value));
+    for (const value of texts) {
+      const match = value.match(/(\d+(?:\.\d+)?)\s*分/);
+      if (match) return { score: Number(match[1]), maxScore: Number(match[1]) };
+    }
+    const nearbyMatch = line && visibleText(line).match(/(\d+(?:\.\d+)?)\s*分/);
+    if (nearbyMatch) return { score: Number(nearbyMatch[1]), maxScore: Number(nearbyMatch[1]) };
+    return { score: null, maxScore: null };
+  }
+
+  function codeLineText(line, fields) {
+    if (!line) return '';
+    const clone = line.cloneNode(true);
+    const candidates = (fields && fields.length ? Array.from(fields) : [])
+      .filter((field) => field && line.contains(field));
+    const originalFields = (candidates.length
+      ? candidates
+      : Array.from(line.querySelectorAll(PROGRAM_FILL_FIELD_SELECTOR)).filter(isProgramFillField));
+    const clonedFields = Array.from(clone.querySelectorAll(PROGRAM_FILL_FIELD_SELECTOR)).filter(isProgramFillField);
+    originalFields.forEach((field, index) => {
+      const clonedField = clonedFields[index];
+      if (!clonedField) return;
+      const target = clonedField.closest('span.inline-flex') || clonedField;
+      target.replaceWith(clone.ownerDocument.createTextNode('____'));
+    });
+    clone.querySelectorAll('.cm-widgetBuffer, .cm-placeholder').forEach((node) => node.remove());
+    return String(clone.textContent || '')
+      .replace(/\u200b/g, '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/[ \t]+$/g, '');
+  }
+
+  function programFillLineInfo(field) {
+    const line = field.closest('.cm-line');
+    if (!line) return { lineNumber: null, codeLine: '' };
+    const lines = Array.from(line.parentElement ? line.parentElement.querySelectorAll('.cm-line') : []);
+    return {
+      lineNumber: lines.indexOf(line) >= 0 ? lines.indexOf(line) + 1 : null,
+      codeLine: codeLineText(line),
+    };
+  }
+
+  function extractProgramFillBlankFromDom(root) {
+    const scope = root || document;
+    const fillBody = scope.querySelector('.fillInTheBlankBody_w0pF7, [class*="fillInTheBlankBody"], [class*="fillInTheBlank"]');
+    const editor = scope.querySelector('.fillInTheBlankBody_w0pF7 .cm-editor, [class*="fillInTheBlank"] .cm-editor, .codeEditor_WDyZc .cm-editor, .cm-editor');
+    const fieldRoot = fillBody || editor || scope;
+    const fields = Array.from(fieldRoot.querySelectorAll(PROGRAM_FILL_FIELD_SELECTOR)).filter(isProgramFillField);
+    if (!fields.length) return null;
+
+    const blanks = fields.map((field, index) => {
+      const info = programFillLineInfo(field);
+      const score = programFillNearbyScore(field);
+      const answer = programFillValue(field);
+      return {
+        index: index + 1,
+        lineNumber: info.lineNumber,
+        codeLine: info.codeLine || `第 ${index + 1} 空所在代码行`,
+        prompt: info.codeLine || '',
+        answer,
+        referenceAnswer: '',
+        score: score.score,
+        maxScore: score.maxScore,
+      };
+    });
+    const lineNumbers = Array.from((editor || fieldRoot).querySelectorAll('.cm-line'));
+    const templateCode = lineNumbers.length
+      ? lineNumbers.map((line) => codeLineText(line, fields)).join('\n')
+      : '';
+    const totalScore = blanks.reduce((sum, blank) => sum + (Number(blank.score) || 0), 0) || null;
+    return {
+      language: programFillLanguage(scope),
+      templateCode,
+      totalScore,
+      blanks,
+    };
+  }
+
+  function programFillAnswers(programFillBlank) {
+    return (programFillBlank && programFillBlank.blanks || []).map((blank) => ({
+      kind: 'program-fill',
+      prompt: blank.prompt || blank.codeLine || `第 ${blank.index} 空`,
+      answer: blank.answer || '',
+      lineNumber: blank.lineNumber,
+      score: blank.score,
+      maxScore: blank.maxScore,
+    }));
+  }
+
+  function snapshotProgramFillBlank(snapshot, fallbackAnswer) {
+    if (!snapshot) return null;
+    const source = snapshot.localProgramFillBlank || snapshot.programFillBlank;
+    if (source && Array.isArray(source.blanks) && source.blanks.length) {
+      return {
+        language: source.language || '未知语言',
+        templateCode: String(source.templateCode || ''),
+        totalScore: source.totalScore == null ? null : source.totalScore,
+        blanks: source.blanks.map((blank, index) => ({
+          index: Number(blank.index) || index + 1,
+          lineNumber: blank.lineNumber == null ? null : Number(blank.lineNumber),
+          codeLine: String(blank.codeLine || blank.prompt || `第 ${index + 1} 空`),
+          prompt: String(blank.prompt || blank.codeLine || ''),
+          answer: String(blank.answer || ''),
+          referenceAnswer: String(blank.referenceAnswer || ''),
+          score: blank.score == null ? null : Number(blank.score),
+          maxScore: blank.maxScore == null ? null : Number(blank.maxScore),
+        })),
+      };
+    }
+    const answers = Array.isArray(snapshot.answers) ? snapshot.answers : [];
+    if (!answers.length) return null;
+    return {
+      language: '未知语言',
+      templateCode: '',
+      totalScore: null,
+      blanks: answers.map((answer, index) => ({
+        index: index + 1,
+        lineNumber: answer.lineNumber == null ? null : Number(answer.lineNumber),
+        codeLine: String(answer.prompt || answer.codeLine || `第 ${index + 1} 空`),
+        prompt: String(answer.prompt || answer.codeLine || ''),
+        answer: String(answer.answer || ''),
+        referenceAnswer: String(answer.referenceAnswer || ''),
+        score: answer.score == null ? null : Number(answer.score),
+        maxScore: answer.maxScore == null ? null : Number(answer.maxScore),
+      })),
+    };
+  }
+
+  function programFillCodeHtml(codeLine) {
+    return escapeHtml(codeLine).replace(/____/g, '<span class="ptaf-program-fill-blank">____</span>');
+  }
+
+  function hasKnownProgramFillLanguage(language) {
+    const value = Core.normalizeWhitespace(language);
+    return Boolean(value && value !== '未知语言');
+  }
+
+  function programFillCardHtml(blank, options) {
+    const opts = options || {};
+    const meta = [
+      blank.lineNumber ? `第 ${blank.lineNumber} 行` : '',
+      blank.score != null ? `${blank.score}${blank.maxScore != null && blank.maxScore !== blank.score ? `/${blank.maxScore}` : ''} 分` : '',
+    ].filter(Boolean).join(' · ');
+    const answer = opts.editing
+      ? `<label class="ptaf-program-fill-edit"><span>我的填写</span><input class="ptaf-input" data-ptaf-program-blank-input data-index="${blank.index - 1}" value="${escapeHtml(blank.answer)}" placeholder="填写这个空"></label>`
+      : `<div class="ptaf-program-fill-answer"><span>我的填写：</span>${blank.answer ? `<code>${escapeHtml(blank.answer)}</code>` : '<span class="ptaf-program-fill-empty">未填写</span>'}</div>`;
+    return `<article class="ptaf-program-fill-card" data-ptaf-program-fill-card data-index="${blank.index - 1}">
+      <div class="ptaf-program-fill-meta"><strong>第 ${blank.index} 空</strong>${meta ? `<span>${escapeHtml(meta)}</span>` : ''}</div>
+      <pre class="ptaf-program-fill-code"><code>${programFillCodeHtml(blank.codeLine)}</code></pre>
+      ${answer}
+      <div class="ptaf-program-fill-reference"><span>参考答案：</span>${blank.referenceAnswer ? `<code>${escapeHtml(blank.referenceAnswer)}</code>` : '<span class="ptaf-program-fill-empty">未公布</span>'}</div>
+    </article>`;
+  }
+
+  function programFillListHtml(programFillBlank, options) {
+    const opts = options || {};
+    if (!programFillBlank || !programFillBlank.blanks.length) {
+      return '<span class="ptaf-answer-chip muted">未检测到程序填空内容</span>';
+    }
+    return `<div class="ptaf-program-fill-list" data-ptaf-program-fill-list>
+      ${opts.showHeader !== false ? `<div class="ptaf-program-fill-summary"><span class="ptaf-program-fill-kicker">程序填空题</span>${hasKnownProgramFillLanguage(programFillBlank.language) ? `<span>${escapeHtml(programFillBlank.language)}</span>` : ''}<span>${programFillBlank.blanks.length} 个空</span>${programFillBlank.totalScore != null ? `<span>共 ${programFillBlank.totalScore} 分</span>` : ''}</div>` : ''}
+      <div class="ptaf-program-fill-cards">${programFillBlank.blanks.map((blank) => programFillCardHtml(blank, opts)).join('')}</div>
+    </div>`;
+  }
+
   function extractAnswersFromDom(root) {
     const answers = [];
     const usedInputs = new Set();
@@ -2006,9 +2578,10 @@
       });
     });
 
-    root.querySelectorAll('textarea, input[type="text"], input[type="number"], select').forEach((field) => {
+    root.querySelectorAll('textarea, input:not([type]), input[type="text"], input[type="number"], select').forEach((field) => {
       if (field.closest(`#${HOST_ID}`)) return;
       const fieldContext = `${field.className || ''} ${field.id || ''} ${field.getAttribute('aria-label') || ''} ${field.closest('[class]') ? field.closest('[class]').className : ''}`;
+      if (field.closest('.fillInTheBlankBody_w0pF7, [class*="fillInTheBlankBody"], [class*="fillInTheBlank"]')) return;
       if (/code|editor|monaco|codemirror|source/i.test(fieldContext)) return;
       const value = field.tagName === 'SELECT'
         ? visibleText(field.options[field.selectedIndex])
@@ -2081,7 +2654,7 @@
     if (element.tagName === 'TEXTAREA') return String(element.value || '').replace(/\r\n?/g, '\n');
     const lines = Array.from(element.querySelectorAll('.cm-line, .CodeMirror-line, .view-line'));
     const source = lines.length
-      ? lines.map((line) => String(line.textContent || '')).join('\n')
+      ? lines.map((line) => codeLineText(line)).join('\n')
       : String(element.textContent || '');
     return source.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n');
   }
@@ -2348,8 +2921,11 @@
 
   async function captureSnapshot(bookmark, options) {
     const opts = options || {};
-    const title = bookmark.title || document.title;
     const exactCard = bookmark.problemId ? document.getElementById(bookmark.problemId) : null;
+    const cardTitle = extractCardHeaderTitle(exactCard);
+    const title = cardTitle
+      || sanitizeProblemTitle(bookmark.title)
+      || Core.cleanProblemTitle(document.title);
     const currentProblem = extractCurrentProblem();
     const isCurrentProblem = currentProblem && Core.makeBookmarkKey(currentProblem) === bookmark.id;
     if (!exactCard && !isCurrentProblem) {
@@ -2368,8 +2944,10 @@
     const officialAnswer = excerptAround(answerScopeText, /(?:正确答案|参考答案|标准答案)(?:[：:\s]|$)/, 320);
     const explanation = excerptAround(answerScopeText, /(?:答案解析|题目解析|解析)(?:[：:\s]|$)/, 500);
     const answers = extractAnswersFromDom(contentRoot);
+    const programFillBlank = extractProgramFillBlankFromDom(contentRoot);
+    const structuredAnswers = programFillBlank ? programFillAnswers(programFillBlank) : answers;
     const choiceGroups = extractChoiceGroupsFromDom(contentRoot);
-    const userAnswer = answers.map((answer) => answer.answer).filter(Boolean).join('；');
+    const userAnswer = structuredAnswers.map((answer) => answer.answer).filter(Boolean).join('；');
     const problemType = Core.normalizeProblemType(bookmark.type);
     const isCodeProblem = ['function', 'programming'].includes(problemType);
     const isObjective = !isCodeProblem;
@@ -2395,12 +2973,13 @@
       html,
       markdown,
       text,
-      answers,
+      answers: structuredAnswers,
+      programFillBlank,
       choiceGroups,
       codeDraft,
       judgeConstraints,
       pageStyles,
-      snapshotVersion: 2,
+      snapshotVersion: 3,
       answerVisibility,
       officialAnswerExcerpt: officialAnswer,
       explanationExcerpt: explanation,
@@ -2468,6 +3047,9 @@
   }
 
   function inferCurrentProblemType(fallbackText) {
+    const fillBlankEditor = document.querySelector('.fillInTheBlankBody_w0pF7, [class*="fillInTheBlankBody"], [class*="fillInTheBlank"] .cm-editor');
+    if (fillBlankEditor) return 'program_fill';
+
     const activeTypeLink = document.querySelector('a.active[href*="/exam/problems/type/"]:not([href*="problemSetProblemId="])');
     const activeTypeText = visibleText(activeTypeLink);
     if (activeTypeText) {
@@ -2485,27 +3067,64 @@
       2: 'single_choice',
       3: 'multiple_choice',
       4: 'fill_blank',
-      5: 'short_answer',
+      5: 'program_fill',
       6: 'function',
       7: 'programming',
     };
     return typeMap[typeId] || Core.inferProblemType(fallbackText);
   }
 
-  function extractCardTitle(card, anchor) {
-    if (!card) return extractTitleFromElement(anchor);
-    const heading = card.querySelector('h1, h2, h3, h4, [class*="problem-title"], [class*="problemTitle"]');
-    const headingText = Core.cleanProblemTitle(visibleText(heading));
-    if (headingText) return headingText.slice(0, 300);
-    const titleLink = card.querySelector('[data-e2e="problem-set-problem-list-link"]');
-    const titleLinkText = Core.cleanProblemTitle(visibleText(titleLink));
-    if (titleLinkText) return titleLinkText.slice(0, 300);
-    const firstParagraph = card.querySelector('.rendered-markdown p, .rendered-markdown');
-    const paragraphText = Core.cleanProblemTitle(visibleText(firstParagraph));
-    if (paragraphText) return paragraphText.slice(0, 180);
-    return extractTitleFromElement(anchor);
+  function extractCardHeaderTitle(card) {
+    if (!card) return '';
+    const header = card.firstElementChild;
+    if (!header) return '';
+    const isMetadata = (text) => !text
+      || /^\d{1,4}[-–—]\d{1,4}$/.test(text)
+      || /^分数(?:\s|$)/.test(text)
+      || /^作者(?:\s|$)/.test(text)
+      || /^单位(?:\s|$)/.test(text)
+      || /^(复制内容|复制代码|格式|全屏|收起)$/.test(text);
+    const preferred = header.querySelector('.grow > .pc-text, .grow [class*="problem-title"], .grow [class*="problemTitle"]');
+    const preferredText = sanitizeProblemTitle(visibleText(preferred));
+    if (preferredText && !isMetadata(preferredText)) return preferredText.slice(0, 300);
+    const candidates = Array.from(header.querySelectorAll('.pc-text, [class*="title"], [data-e2e="problem-set-problem-list-link"]'))
+      .map((element) => sanitizeProblemTitle(visibleText(element)))
+      .filter((text) => !isMetadata(text) && text.length >= 2 && text.length <= 300);
+    return candidates[0] || '';
   }
 
+  function extractSnapshotCardTitle(snapshot, bookmark) {
+    if (!snapshot || !snapshot.html || !bookmark || !bookmark.problemId) return '';
+    const template = document.createElement('template');
+    template.innerHTML = snapshot.html;
+    const card = Array.from(template.content.querySelectorAll('[id]'))
+      .find((element) => element.id === bookmark.problemId);
+    return extractCardHeaderTitle(card);
+  }
+
+  function recoverSnapshotTitle(snapshot, bookmark) {
+    const rawTitle = Core.normalizeWhitespace(bookmark && bookmark.title);
+    if (!hasSnapshotTitleNoise(rawTitle)) return rawTitle;
+    const recoveredTitle = extractSnapshotCardTitle(snapshot, bookmark);
+    return recoveredTitle || rawTitle;
+  }
+
+
+  function extractCardTitle(card, anchor) {
+    if (!card) return extractTitleFromElement(anchor);
+    const headerTitle = extractCardHeaderTitle(card);
+    if (headerTitle) return headerTitle;
+    const heading = card.querySelector('h1, h2, h3, h4, [class*="problem-title"], [class*="problemTitle"]');
+    const headingText = sanitizeProblemTitle(visibleText(heading));
+    if (headingText) return headingText.slice(0, 300);
+    const titleLink = card.querySelector('[data-e2e="problem-set-problem-list-link"]');
+    const titleLinkText = sanitizeProblemTitle(visibleText(titleLink));
+    if (titleLinkText) return titleLinkText.slice(0, 300);
+    const firstParagraph = card.querySelector('.rendered-markdown p');
+    const paragraphText = sanitizeProblemTitle(visibleText(firstParagraph));
+    if (paragraphText && paragraphText.length <= 180 && !/[。！？；]\s*$/.test(paragraphText)) return paragraphText;
+    return extractTitleFromElement(anchor);
+  }
   function extractTitleFromElement(element) {
     if (!element) return '';
     const explicit = element.getAttribute('data-title')
@@ -2647,7 +3266,7 @@
       this.snapshotResizeCleanup = null;
       this.dragState = null;
       this.launcherDrag = null;
-      this.suppressLauncherClick = false;
+      this.swallowLauncherClick = false;
       this.expandedProblemSets = new Set();
       this.toastTimer = null;
       this.host = null;
@@ -3384,6 +4003,145 @@ button {
   border-color: var(--ptaf-border);
   font-weight: 400;
 }
+.ptaf-program-fill-answer-summary {
+  display: block;
+}
+.ptaf-program-fill-list {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.ptaf-program-fill-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+.ptaf-program-fill-summary > span:not(.ptaf-program-fill-kicker) {
+  padding: 3px 8px;
+  background: var(--ptaf-panel-2);
+  border: 1px solid var(--ptaf-border);
+  border-radius: 999px;
+}
+.ptaf-program-fill-kicker {
+  padding: 3px 8px;
+  color: #0757b8;
+  background: #e5f0ff;
+  border: 1px solid #c5dcf8;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.ptaf-program-fill-cards {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.ptaf-program-fill-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--ptaf-panel);
+  border: 1px solid var(--ptaf-border);
+  border-left: 3px solid var(--ptaf-primary);
+  border-radius: 9px;
+}
+.ptaf-program-fill-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+.ptaf-program-fill-meta strong {
+  color: var(--ptaf-text);
+  font-size: 13px;
+}
+.ptaf-program-fill-code {
+  margin: 0;
+  padding: 9px 10px;
+  overflow-x: auto;
+  color: #24354d;
+  background: #f3f7fc;
+  border: 1px solid #dce6f2;
+  border-radius: 7px;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre;
+}
+.ptaf-program-fill-code code {
+  color: inherit;
+  background: transparent;
+}
+.ptaf-program-fill-blank {
+  padding: 1px 5px;
+  color: #084f9e;
+  background: #d8eaff;
+  border-bottom: 2px solid #287bd8;
+  border-radius: 4px 4px 2px 2px;
+  font-weight: 800;
+}
+.ptaf-program-fill-answer,
+.ptaf-program-fill-reference {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+}
+.ptaf-program-fill-answer {
+  color: var(--ptaf-text);
+}
+.ptaf-program-fill-answer > span:first-child,
+.ptaf-program-fill-reference > span:first-child {
+  color: var(--ptaf-muted);
+}
+.ptaf-program-fill-answer code {
+  padding: 2px 6px;
+  color: #0757b8;
+  background: #e5f0ff;
+  border: 1px solid #c5dcf8;
+  border-radius: 5px;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ptaf-program-fill-reference {
+  padding-top: 7px;
+  color: var(--ptaf-muted);
+  border-top: 1px dashed var(--ptaf-border);
+}
+.ptaf-program-fill-reference code {
+  color: #51657e;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  overflow-wrap: anywhere;
+}
+.ptaf-program-fill-empty {
+  color: var(--ptaf-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+.ptaf-program-fill-edit {
+  display: grid;
+  gap: 5px;
+  color: var(--ptaf-muted);
+  font-size: 12px;
+}
+.ptaf-program-fill-edit .ptaf-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+}
+.ptaf-program-fill-template {
+  margin-top: 10px;
+}
 .ptaf-code-block {
   overflow: hidden;
   border: 1px solid #26364f;
@@ -3499,6 +4257,62 @@ button {
 }
 .ptaf-code-content code {
   font: inherit;
+}
+.ptaf-snapshot-code {
+  margin: 10px 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+}
+.ptaf-snapshot-code-head {
+  padding: 7px 10px;
+  color: #53657a;
+  background: #eef3f8;
+  border-bottom: 1px solid #dbe4ef;
+  font: 12px/1.4 Consolas, Monaco, monospace;
+}
+.ptaf-snapshot-code-body {
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  align-items: start !important;
+  max-height: 430px;
+  overflow: auto;
+  background: #fff;
+}
+.ptaf-snapshot-line-numbers,
+.ptaf-snapshot-code-content {
+  display: block !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 11px 0 !important;
+  border-radius: 0 !important;
+  font: 17px/1.75 Consolas, Monaco, "Courier New", monospace !important;
+  tab-size: 4 !important;
+  white-space: pre !important;
+}
+.ptaf-snapshot-line-numbers {
+  grid-column: 1 !important;
+  padding-right: 9px !important;
+  color: #94a3b8 !important;
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+  text-align: right !important;
+  user-select: none !important;
+}
+.ptaf-snapshot-code-content {
+  grid-column: 2 !important;
+  padding-left: 12px !important;
+  overflow: visible !important;
+  color: #1f2937 !important;
+  background: #fff !important;
+}
+.ptaf-snapshot-code-content code {
+  font: inherit !important;
+  color: inherit !important;
 }
 .token-keyword { color: #7c3aed; font-weight: 600; }
 .token-string { color: #b45309; }
@@ -4059,6 +4873,38 @@ button {
   border-color: #2d5e91;
 }
 
+:host(.is-night) .ptaf-program-fill-kicker {
+  color: #a9d4ff;
+  background: #17385d;
+  border-color: #2d5e91;
+}
+
+:host(.is-night) .ptaf-program-fill-summary > span:not(.ptaf-program-fill-kicker) {
+  background: #17243a;
+}
+
+:host(.is-night) .ptaf-program-fill-code {
+  color: #e5edf7;
+  background: #0f172a;
+  border-color: #2a3c57;
+}
+
+:host(.is-night) .ptaf-program-fill-blank {
+  color: #c4e1ff;
+  background: #173f6c;
+  border-bottom-color: #65a9ee;
+}
+
+:host(.is-night) .ptaf-program-fill-answer code {
+  color: #a9d4ff;
+  background: #17385d;
+  border-color: #2d5e91;
+}
+
+:host(.is-night) .ptaf-program-fill-reference code {
+  color: #b7c7db;
+}
+
 :host(.is-night) .ptaf-code-viewer {
   background: #0f172a;
   border-color: var(--ptaf-border);
@@ -4084,6 +4930,33 @@ button {
 :host(.is-night) .ptaf-code-content code,
 :host(.is-night) .token-identifier {
   color: #e5edf7;
+}
+
+:host(.is-night) .ptaf-snapshot-code {
+  background: #0f172a;
+  border-color: var(--ptaf-border);
+}
+
+:host(.is-night) .ptaf-snapshot-code-head {
+  color: #c9d7ea;
+  background: #17243a;
+  border-color: var(--ptaf-border);
+}
+
+:host(.is-night) .ptaf-snapshot-code-body {
+  background: #0f172a;
+}
+
+:host(.is-night) .ptaf-snapshot-line-numbers {
+  color: #8ea4be;
+  background: #111c31;
+  border-color: var(--ptaf-border);
+}
+
+:host(.is-night) .ptaf-snapshot-code-content,
+:host(.is-night) .ptaf-snapshot-code-content code {
+  color: #e5edf7;
+  background: #0f172a;
 }
 
 :host(.is-night) .ptaf-ai-output {
@@ -4370,6 +5243,111 @@ button {
 :host(.is-night) .ptaf-update-status.is-current {
   color: #83d9b5;
 }
+
+.ptaf-create-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ptaf-create-type {
+  padding: 6px 12px;
+  color: var(--ptaf-text);
+  background: var(--ptaf-panel-2);
+  border: 1px solid var(--ptaf-border);
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.ptaf-create-type:hover {
+  border-color: var(--ptaf-primary);
+  color: var(--ptaf-primary-strong);
+}
+
+.ptaf-create-type.is-active {
+  color: #fff;
+  background: var(--ptaf-primary);
+  border-color: var(--ptaf-primary);
+}
+
+.ptaf-create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ptaf-create-stem,
+.ptaf-create-code {
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+#ptafCreateModal .ptaf-modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.ptaf-local-title {
+  margin: 0 0 10px;
+  font-size: 19px;
+}
+
+.ptaf-local-heading {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}
+
+.ptaf-local-pre {
+  margin: 0 0 10px;
+}
+
+.ptaf-local-options {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.ptaf-local-option {
+  display: block;
+}
+
+.ptaf-local-option span {
+  margin-left: 4px;
+}
+
+.ptaf-local-blanks {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.ptaf-local-blank {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ptaf-local-blank input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+:host(.is-night) .ptaf-create-type {
+  color: #d8e5f5;
+  background: #17243a;
+  border-color: #2a3c57;
+}
+
+:host(.is-night) .ptaf-create-type.is-active {
+  color: #fff;
+  background: #287bd8;
+  border-color: #287bd8;
+}
+
 `;
       this.shadow.appendChild(styles);
 
@@ -4392,6 +5370,7 @@ button {
                 </div>
               </div>
               <div class="ptaf-header-actions">
+                <button class="ptaf-btn" id="ptafCreateProblem" type="button" title="快速创建题目（Alt+Shift+N）">＋ 新建题目</button>
                 <button class="ptaf-btn primary" id="ptafSelectExport" type="button">导出</button>
                 <button class="ptaf-btn" id="ptafImport" type="button">导入 JSON</button>
                 <button class="ptaf-btn" id="ptafAiSettings" type="button">AI 设置</button>
@@ -4444,10 +5423,26 @@ button {
               <button class="ptaf-btn" id="ptafToggleSnapshotLayout" type="button">并排查看</button>
               <button class="ptaf-btn" id="ptafOpenOriginal" type="button">打开原题</button>
               <button class="ptaf-btn" id="ptafRefreshSnapshot" type="button">刷新快照</button>
+              <button class="ptaf-btn" id="ptafEditLocalProblem" type="button" hidden>编辑题目</button>
             </footer>
           </section>
         </div>
 
+        <div class="ptaf-overlay" id="ptafCreateModal">
+          <div class="ptaf-modal-backdrop" data-ptaf-close="create"></div>
+          <section class="ptaf-modal-card wide">
+            <header class="ptaf-modal-head">
+              <h3 id="ptafCreateTitle">新建题目</h3>
+              <button class="ptaf-btn small" data-ptaf-close="create" type="button">关闭</button>
+            </header>
+            <div class="ptaf-modal-body" id="ptafCreateBody"></div>
+            <footer class="ptaf-modal-foot">
+              <button class="ptaf-btn" id="ptafCreateTemplate" type="button">载入模板</button>
+              <button class="ptaf-btn" id="ptafCreateAddFolder" type="button">＋ 新建收藏夹</button>
+              <button class="ptaf-btn primary" id="ptafCreateSave" type="button">保存到收藏夹</button>
+            </footer>
+          </section>
+        </div>
         <div class="ptaf-overlay" id="ptafBatchFolderModal">
           <div class="ptaf-modal-backdrop" data-ptaf-close="batchFolder"></div>
           <section class="ptaf-modal-card narrow">
@@ -4529,7 +5524,7 @@ button {
                 <span class="ptaf-about-mark">P</span>
                 <div><strong>PTA-Pro</strong><div>PTA 收藏夹脚本</div></div>
               </div>
-              <div class="ptaf-card-meta">版本 v${APP_VERSION} · 作者 UIM258</div>
+              <div class="ptaf-card-meta">版本 v${currentScriptVersion()} · 作者 UIM258</div>
               <p class="ptaf-about-description">在 PTA 中收藏和管理题目，保存本地快照、作答与判题记录，并使用 AI 学习助手辅助复习。</p>
               <div class="ptaf-about-links">
                 <a class="ptaf-btn" href="${PROJECT_LINKS.script}" target="_blank" rel="noopener noreferrer">安装脚本</a>
@@ -4539,7 +5534,7 @@ button {
               </div>
               <div class="ptaf-update-row">
                 <button class="ptaf-btn" id="ptafCheckUpdate" type="button">检查更新</button>
-                <span class="ptaf-update-status" id="ptafUpdateStatus">当前版本 v${APP_VERSION}</span>
+                <span class="ptaf-update-status" id="ptafUpdateStatus">当前版本 v${currentScriptVersion()}</span>
                 <a class="ptaf-btn small" id="ptafUpdateLink" href="${PROJECT_LINKS.script}" target="_blank" rel="noopener noreferrer" hidden>更新脚本</a>
               </div>
               <div class="ptaf-about-note">收藏、快照和设置默认仅保存在本地浏览器。请遵守 PTA 及所在学校的使用规范。</div>
@@ -4571,6 +5566,7 @@ button {
       this.aiModal = this.shadow.getElementById('ptafAiModal');
       this.aiSettingsModal = this.shadow.getElementById('ptafAiSettingsModal');
       this.aboutModal = this.shadow.getElementById('ptafAboutModal');
+      this.createModal = this.shadow.getElementById('ptafCreateModal');
       this.toastElement = this.shadow.getElementById('ptafToast');
       document.documentElement.appendChild(this.host);
       this.applyLauncherPosition();
@@ -4588,6 +5584,11 @@ button {
       this.shadow.getElementById('ptafShortcutSettings').addEventListener('click', () => this.openShortcutSettings());
       this.shadow.getElementById('ptafNightMode').addEventListener('click', () => this.toggleNightMode());
       this.shadow.getElementById('ptafAbout').addEventListener('click', () => this.openModal('about'));
+      this.shadow.getElementById('ptafCreateProblem').addEventListener('click', () => this.openCreateProblem());
+      this.shadow.getElementById('ptafCreateSave').addEventListener('click', () => this.saveCreateProblem());
+      this.shadow.getElementById('ptafCreateTemplate').addEventListener('click', () => this.loadCreateTemplate());
+      this.shadow.getElementById('ptafCreateAddFolder').addEventListener('click', () => this.createFolderForCreate());
+      this.shadow.getElementById('ptafEditLocalProblem').addEventListener('click', () => this.openCreateProblem(this.currentSnapshotId));
       this.shadow.getElementById('ptafCheckUpdate').addEventListener('click', () => this.checkForUpdates());
       this.shadow.getElementById('ptafSponsorToggle').addEventListener('click', () => this.toggleSponsorPanel());
       this.shadow.getElementById('ptafAiSettings').addEventListener('click', () => this.openAiSettings());
@@ -4679,6 +5680,11 @@ button {
       });
 
       this.shadow.addEventListener('click', (event) => {
+        const createTypeChip = event.target.closest('[data-ptaf-create-type]');
+        if (createTypeChip) {
+          this.switchCreateType(createTypeChip.getAttribute('data-ptaf-create-type'));
+          return;
+        }
         const close = event.target.closest('[data-ptaf-close]');
         if (close) {
           this.closeModal(close.getAttribute('data-ptaf-close'));
@@ -4864,6 +5870,18 @@ button {
       this.launcher.style.top = 'auto';
     }
 
+    launcherActionFor(target) {
+      if (!target || typeof target.closest !== 'function') return '';
+      const button = target.closest('button');
+      if (!button) return '';
+      return button.id || '';
+    }
+
+    activateLauncherAction(action) {
+      if (action === 'ptafOpenDrawer') this.openDrawer();
+      if (action === 'ptafAbout') this.openModal('about');
+    }
+
     startLauncherDrag(event) {
       if (!this.launcher || (event.button !== 0 && event.pointerType !== 'touch')) return;
       const rect = this.launcher.getBoundingClientRect();
@@ -4874,8 +5892,8 @@ button {
         startRight: window.innerWidth - rect.right,
         startBottom: window.innerHeight - rect.bottom,
         moved: false,
+        action: this.launcherActionFor(event.target),
       };
-      try { this.launcher.setPointerCapture(event.pointerId); } catch (error) {}
       window.addEventListener('pointermove', this.handleLauncherDrag, true);
       window.addEventListener('pointerup', this.endLauncherDrag, true);
       window.addEventListener('pointercancel', this.endLauncherDrag, true);
@@ -4914,17 +5932,22 @@ button {
         const bottom = Math.round(Number.parseFloat(this.launcher.style.bottom) || 24);
         this.store.state.settings.launcherPosition = { right, bottom };
         this.store.save(true);
-        this.suppressLauncherClick = true;
-        setTimeout(() => { this.suppressLauncherClick = false; }, 250);
       }
       this.launcherDrag = null;
+      // 点击动作统一在 pointerup 阶段触发，并吞掉随之而来的 click，
+      // 避免拖拽相关的 pointer 处理让按钮点不动。
+      if (event.type === 'pointerup') {
+        this.swallowLauncherClick = true;
+        setTimeout(() => { this.swallowLauncherClick = false; }, 500);
+        if (!drag.moved && drag.action) this.activateLauncherAction(drag.action);
+      }
     }
 
     captureLauncherClick(event) {
-      if (!this.suppressLauncherClick) return;
+      if (!this.swallowLauncherClick) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.suppressLauncherClick = false;
+      this.swallowLauncherClick = false;
     }
 
     openDrawer() {
@@ -5018,6 +6041,10 @@ button {
     }
 
     executeShortcutAction(action) {
+      if (action === 'createProblem') {
+        this.openCreateProblem();
+        return;
+      }
       if (action === 'toggleDrawer') {
         if (this.drawerOverlay.classList.contains('is-open')) this.closeDrawer();
         else this.openDrawer();
@@ -5057,6 +6084,7 @@ button {
         if (this.isModalOpen('shortcut')) { this.closeModal('shortcut'); event.preventDefault(); return; }
         if (this.isModalOpen('aiSettings')) { this.closeModal('aiSettings'); event.preventDefault(); return; }
         if (this.isModalOpen('ai')) { this.closeModal('ai'); event.preventDefault(); return; }
+        if (this.isModalOpen('create')) { this.closeModal('create'); event.preventDefault(); return; }
         if (this.isModalOpen('about')) { this.closeModal('about'); event.preventDefault(); return; }
         if (this.drawerOverlay.classList.contains('is-open')) { this.closeDrawer(); event.preventDefault(); }
         return;
@@ -5286,28 +6314,54 @@ button {
       const status = this.shadow.getElementById('ptafUpdateStatus');
       const link = this.shadow.getElementById('ptafUpdateLink');
       if (!button || !status || !link) return;
+      const currentVersion = currentScriptVersion();
       button.disabled = true;
       button.textContent = '检查中...';
       status.className = 'ptaf-update-status';
       status.textContent = '正在检查更新...';
+      status.title = '';
       link.hidden = true;
       try {
-        const source = await requestTextUrl(PROJECT_LINKS.script, 15000);
-        const match = source.match(/^\/\/\s*@version\s+([^\s]+)/m);
-        if (!match) throw new Error('无法读取远程版本号');
-        const latestVersion = match[1].trim();
-        if (compareVersions(latestVersion, APP_VERSION) > 0) {
+        const sources = [
+          { label: 'GitHub Raw', url: PROJECT_LINKS.script },
+          { label: 'jsDelivr', url: PROJECT_LINKS.scriptMirror },
+        ].filter((source) => source.url);
+        const results = await Promise.all(sources.map(async (source) => {
+          try {
+            const separator = source.url.includes('?') ? '&' : '?';
+            const cacheBustedUrl = `${source.url}${separator}ptaf_check=${Date.now()}`;
+            const content = await requestTextUrl(cacheBustedUrl, 15000);
+            const match = content.match(/^\s*\/\/\s*@version\s+([^\s]+)/m);
+            if (!match) throw new Error('未找到 @version');
+            return { ...source, version: match[1].trim() };
+          } catch (error) {
+            return { ...source, error: `${source.label} ${error && error.message ? error.message : error}` };
+          }
+        }));
+        const available = results.filter((result) => result.version);
+        const failures = results.filter((result) => result.error).map((result) => result.error);
+        if (!available.length) throw new Error(failures.join('；') || '没有可用的更新源');
+        const latest = available.reduce((best, candidate) => (
+          compareVersions(candidate.version, best.version) > 0 ? candidate : best
+        ));
+        link.href = latest.url;
+        const comparison = compareVersions(latest.version, currentVersion);
+        if (comparison > 0) {
           status.className = 'ptaf-update-status is-new';
-          status.textContent = `发现新版本 v${latestVersion}`;
+          status.textContent = `发现新版本 v${latest.version}`;
           link.hidden = false;
+        } else if (comparison < 0) {
+          status.className = 'ptaf-update-status is-current';
+          status.textContent = `本地 v${currentVersion} 比远程 v${latest.version} 新（远程尚未发布）`;
         } else {
           status.className = 'ptaf-update-status is-current';
-          status.textContent = '已是最新版本';
+          status.textContent = `已是最新版本 v${currentVersion}`;
         }
+        if (failures.length) status.title = `已通过 ${latest.label} 检查；${failures.join('；')}`;
       } catch (error) {
         warn('检查更新失败', error);
         status.className = 'ptaf-update-status is-error';
-        status.textContent = '检查更新失败，请稍后重试';
+        status.textContent = `检查更新失败：${error && error.message ? error.message : error}`;
       } finally {
         button.disabled = false;
         button.textContent = '检查更新';
@@ -5350,6 +6404,7 @@ button {
       if (name === 'shortcut') return this.shortcutModal;
       if (name === 'ai') return this.aiModal;
       if (name === 'aiSettings') return this.aiSettingsModal;
+      if (name === 'create') return this.createModal;
       if (name === 'about') return this.aboutModal;
       return null;
     }
@@ -5368,6 +6423,7 @@ button {
     }
 
     closeModal(name) {
+      if (name === 'create') this.editingLocalId = '';
       if (name === 'editor' && this.currentEditId) {
         const bookmark = this.store.state.bookmarks[this.currentEditId];
         if (bookmark && !Core.isCollected(bookmark)) {
@@ -5492,7 +6548,9 @@ button {
       }
 
       const cards = pageBookmarks.map((bookmark) => {
+        const cardTitle = bookmarkCardTitle(bookmark);
         const contentStatus = contentBadge(bookmark);
+        const isLocal = Core.isLocalProblem(bookmark);
         const answerVisibility = bookmark.answer && bookmark.answer.visibility ? bookmark.answer.visibility : 'unknown';
         const latest = bookmark.submissions && bookmark.submissions[0];
         const statusText = latest ? Core.statusSummary(bookmark) : Core.statusLabel(bookmark.status);
@@ -5502,13 +6560,16 @@ button {
             ${this.batchMode ? `<label class="ptaf-select-box" title="选择用于批量管理"><input type="checkbox" data-ptaf-select-bookmark value="${escapeHtml(bookmark.id)}" ${this.selectedBookmarkIds.has(bookmark.id) ? 'checked' : ''}></label>` : '<span class="ptaf-drag-handle ptaf-card-drag-handle" title="拖动排序" aria-hidden="true">⋮⋮</span>'}
             <h4 class="ptaf-card-title">
               ${bookmark.label ? `<span>${escapeHtml(bookmark.label)}</span> ` : ''}
-              <a href="${escapeHtml(bookmark.url)}" target="_blank" rel="noreferrer">${escapeHtml(bookmark.title)}</a>
+                ${isLocal
+                ? `<span class="ptaf-card-title-text">${escapeHtml(cardTitle || '未命名题目')}</span>`
+                : `<a href="${escapeHtml(bookmark.url)}" target="_blank" rel="noreferrer">${escapeHtml(cardTitle || '未命名题目')}</a>`}
             </h4>
             <span class="ptaf-badge ${bookmark.status === 'done' ? 'success' : ''}">${escapeHtml(Core.statusLabel(bookmark.status))}</span>
           </div>
           <div class="ptaf-card-meta">${escapeHtml(bookmark.problemSetName || '未命名题目集')} · ${escapeHtml(Core.typeLabel(bookmark.type))}</div>
           <div class="ptaf-badges">
             <span class="ptaf-badge ${bookmark.content && bookmark.content.status === 'full' ? 'success' : 'warning'}">${escapeHtml(contentStatus)}</span>
+            ${isLocal ? '<span class="ptaf-badge">本地创建</span>' : ''}
             <span class="ptaf-badge ${answerBadgeClass(answerVisibility)}">${escapeHtml(Core.answerVisibilityLabel(answerVisibility))}</span>
             <span class="ptaf-badge ${statusBadgeClass(latest && latest.status)}">${escapeHtml(statusText)}</span>
             ${tags}
@@ -5517,7 +6578,9 @@ button {
           <div class="ptaf-card-actions">
             <button class="ptaf-btn small" type="button" data-ptaf-action="edit" data-bookmark-id="${escapeHtml(bookmark.id)}">管理</button>
             <button class="ptaf-btn small" type="button" data-ptaf-action="snapshot" data-bookmark-id="${escapeHtml(bookmark.id)}">本地快照</button>
-            <button class="ptaf-btn small" type="button" data-ptaf-action="capture" data-bookmark-id="${escapeHtml(bookmark.id)}">更新快照</button>
+            ${isLocal
+              ? `<button class="ptaf-btn small" type="button" data-ptaf-action="edit-local" data-bookmark-id="${escapeHtml(bookmark.id)}">编辑题目</button>`
+              : `<button class="ptaf-btn small" type="button" data-ptaf-action="capture" data-bookmark-id="${escapeHtml(bookmark.id)}">更新快照</button>`}
             <button class="ptaf-btn small" type="button" data-ptaf-action="ai" data-bookmark-id="${escapeHtml(bookmark.id)}">AI</button>
           </div>
         </article>`;
@@ -5705,10 +6768,270 @@ button {
     handleListAction(action, bookmarkId) {
       if (action === 'edit') this.openEditor(bookmarkId);
       if (action === 'snapshot') this.openSnapshot(bookmarkId);
+      if (action === 'edit-local') this.openCreateProblem(bookmarkId);
       if (action === 'capture') this.captureBookmark(bookmarkId);
       if (action === 'ai') this.openAiPanel(bookmarkId);
     }
 
+    async openCreateProblem(bookmarkId) {
+      const bookmark = bookmarkId ? this.store.state.bookmarks[bookmarkId] : null;
+      const titleElement = this.shadow.getElementById('ptafCreateTitle');
+      const saveButton = this.shadow.getElementById('ptafCreateSave');
+      if (bookmark) {
+        const snapshot = await this.snapshotStore.get(bookmark.id);
+        this.createDraft = draftFromLocalSnapshot(bookmark, snapshot);
+        this.editingLocalId = bookmark.id;
+        if (titleElement) titleElement.textContent = '编辑题目内容';
+        if (saveButton) saveButton.textContent = '保存修改';
+      } else {
+        const lastType = this.store.state.settings.lastCreateType || 'single_choice';
+        this.createDraft = defaultCreateDraft(lastType);
+        this.createDraft.folderIds = [this.store.state.settings.defaultFolderId || Core.DEFAULT_FOLDER_ID];
+        this.editingLocalId = '';
+        if (titleElement) titleElement.textContent = '新建题目';
+        if (saveButton) saveButton.textContent = '保存到收藏夹';
+      }
+      this.renderCreateForm();
+      this.openModal('create');
+      const focusTarget = this.shadow.getElementById('ptafCreateTitleInput');
+      if (focusTarget) focusTarget.focus();
+    }
+
+    renderCreateForm() {
+      const body = this.shadow.getElementById('ptafCreateBody');
+      if (!body) return;
+      const draft = this.createDraft;
+      const typeChips = LOCAL_CREATE_TYPES
+        .map((type) => '<button class="ptaf-create-type ' + (draft.type === type ? 'is-active' : '') + '" type="button" data-ptaf-create-type="' + type + '">' + escapeHtml(Core.typeLabel(type)) + '</button>')
+        .join('');
+      const folders = Object.values(this.store.state.folders)
+        .sort((a, b) => Number(b.system) - Number(a.system) || a.name.localeCompare(b.name, 'zh-CN'));
+      const selectedFolders = draft.folderIds || [];
+      const folderChecks = folders
+        .map((folder) => '<label class="ptaf-check"><input type="checkbox" data-ptaf-create-folder value="' + escapeHtml(folder.id) + '"' + (selectedFolders.includes(folder.id) ? ' checked' : '') + '>' + escapeHtml(folder.name) + '</label>')
+        .join('');
+      const setNames = Core.unique(Object.values(this.store.state.bookmarks).map((bookmark) => bookmark.problemSetName)).filter(Boolean);
+      const statusOptions = Object.entries(Core.STATUS_LABELS)
+        .map(([value, label]) => '<option value="' + value + '"' + (draft.status === value ? ' selected' : '') + '>' + escapeHtml(label) + '</option>')
+        .join('');
+      body.innerHTML = [
+        '<div class="ptaf-field"><label>题型</label><div class="ptaf-create-types">' + typeChips + '</div></div>',
+        '<div class="ptaf-create-grid">',
+        '<div class="ptaf-field"><label for="ptafCreateLabelInput">题号</label><input class="ptaf-input" id="ptafCreateLabelInput" value="' + escapeHtml(draft.label) + '" placeholder="例如 7-1"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateSetInput">所属题目集</label><input class="ptaf-input" id="ptafCreateSetInput" list="ptafCreateSetOptions" value="' + escapeHtml(draft.setName) + '" placeholder="例如 本地题库 / 数据结构"><datalist id="ptafCreateSetOptions">' + setNames.map((name) => '<option value="' + escapeHtml(name) + '"></option>').join('') + '</datalist></div>',
+        '</div>',
+        '<div class="ptaf-field"><label for="ptafCreateTitleInput">标题</label><input class="ptaf-input" id="ptafCreateTitleInput" value="' + escapeHtml(draft.title) + '" placeholder="题目标题"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateStemInput">题干</label><textarea class="ptaf-textarea ptaf-create-stem" id="ptafCreateStemInput" rows="7" placeholder="支持 Markdown：**加粗**、列表、代码块。">' + escapeHtml(draft.stem) + '</textarea></div>',
+        '<div id="ptafCreateDynamic"></div>',
+        '<div class="ptaf-create-grid">',
+        '<div class="ptaf-field"><label for="ptafCreateTags">标签</label><input class="ptaf-input" id="ptafCreateTags" value="' + escapeHtml(draft.tags) + '" placeholder="用逗号分隔"></div>',
+        '<div class="ptaf-field"><label for="ptafCreateStatus">学习状态</label><select class="ptaf-select" id="ptafCreateStatus">' + statusOptions + '</select></div>',
+        '</div>',
+        '<div class="ptaf-field"><label>收藏到</label><div class="ptaf-check-list">' + folderChecks + '</div></div>',
+        '<details class="ptaf-details"><summary>备注</summary><textarea class="ptaf-textarea" id="ptafCreateNote" rows="2" placeholder="备注只保存在本地">' + escapeHtml(draft.note) + '</textarea></details>',
+        '<div class="ptaf-card-meta">题目会作为“本地创建”的收藏保存在浏览器中，可随时编辑；题干和解析支持 Markdown。</div>',
+      ].join('');
+      this.renderCreateDynamic();
+    }
+
+    renderCreateDynamic() {
+      const container = this.shadow.getElementById('ptafCreateDynamic');
+      if (!container) return;
+      const draft = this.createDraft;
+      const blocks = [];
+      const textarea = (id, label, value, rows, placeholder, extraClass) => '<div class="ptaf-field"><label for="' + id + '">' + escapeHtml(label) + '</label><textarea class="ptaf-textarea ' + (extraClass || '') + '" id="' + id + '" rows="' + rows + '" placeholder="' + escapeHtml(placeholder || '') + '">' + escapeHtml(value || '') + '</textarea></div>';
+      if (isChoiceDraft(draft)) {
+        blocks.push(textarea('ptafCreateOptions', '选项（每行一个，A. 开头）', draft.optionsText, 6, 'A. 选项内容'));
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateMyAnswer">我的作答</label><input class="ptaf-input" id="ptafCreateMyAnswer" value="' + escapeHtml(draft.myAnswer) + '" placeholder="' + (draft.type === 'multiple_choice' ? '例如 AB' : '例如 A') + '"></div>');
+      } else if (draft.type === 'true_false') {
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateMyAnswer">我的作答</label><select class="ptaf-select" id="ptafCreateMyAnswer"><option value="">未作答</option><option value="正确"' + (draft.myAnswer === '正确' ? ' selected' : '') + '>正确</option><option value="错误"' + (draft.myAnswer === '错误' ? ' selected' : '') + '>错误</option></select></div>');
+      } else if (draft.type === 'fill_blank' || draft.type === 'program_fill') {
+        blocks.push(textarea('ptafCreateMyAnswer', '我的作答（每行一个空，按顺序）', draft.myAnswer, 3, '第一空的答案'));
+      } else if (draft.type === 'programming' || draft.type === 'function') {
+        blocks.push('<div class="ptaf-create-grid">' + textarea('ptafCreateSamplesIn', '输入样例', draft.samplesIn, 5, '可留空') + textarea('ptafCreateSamplesOut', '输出样例', draft.samplesOut, 5, '可留空') + '</div>');
+        blocks.push(textarea('ptafCreateHints', '数据范围与提示（可选，支持 Markdown）', draft.hints, 3, '例如 1 ≤ n ≤ 10^5'));
+        blocks.push('<div class="ptaf-field"><label for="ptafCreateLanguage">语言</label><input class="ptaf-input" id="ptafCreateLanguage" value="' + escapeHtml(draft.language) + '" placeholder="C / C++ / Java / Python"></div>');
+        blocks.push(textarea('ptafCreateMyCode', '我的作答代码（可选）', draft.myCode, 10, '粘贴自己的代码', 'ptaf-create-code'));
+        blocks.push(textarea('ptafCreateReferenceCode', '参考代码（可选，保存在“参考答案与解析”）', draft.referenceCode, 10, '粘贴参考实现', 'ptaf-create-code'));
+      }
+      if (draft.type !== 'programming' && draft.type !== 'function') {
+        blocks.push(textarea('ptafCreateOfficial', '参考答案（可选）', draft.officialAnswer, 3, '标准答案'));
+      }
+      blocks.push(textarea('ptafCreateExplanation', '答案解析（可选，支持 Markdown）', draft.explanation, 3, '解析、易错点等'));
+      container.innerHTML = blocks.join('');
+    }
+
+    captureCreateDraft() {
+      if (!this.createDraft) return;
+      const assign = (key, id) => {
+        const element = this.shadow.getElementById(id);
+        if (element) this.createDraft[key] = element.value;
+      };
+      assign('label', 'ptafCreateLabelInput');
+      assign('title', 'ptafCreateTitleInput');
+      assign('setName', 'ptafCreateSetInput');
+      assign('stem', 'ptafCreateStemInput');
+      assign('tags', 'ptafCreateTags');
+      assign('note', 'ptafCreateNote');
+      assign('status', 'ptafCreateStatus');
+      assign('optionsText', 'ptafCreateOptions');
+      assign('myAnswer', 'ptafCreateMyAnswer');
+      assign('officialAnswer', 'ptafCreateOfficial');
+      assign('explanation', 'ptafCreateExplanation');
+      assign('samplesIn', 'ptafCreateSamplesIn');
+      assign('samplesOut', 'ptafCreateSamplesOut');
+      assign('hints', 'ptafCreateHints');
+      assign('language', 'ptafCreateLanguage');
+      assign('referenceCode', 'ptafCreateReferenceCode');
+      assign('myCode', 'ptafCreateMyCode');
+      const folderInputs = Array.from(this.shadow.querySelectorAll('[data-ptaf-create-folder]'));
+      if (folderInputs.length) {
+        this.createDraft.folderIds = folderInputs.filter((input) => input.checked).map((input) => input.value);
+      }
+    }
+
+    switchCreateType(type) {
+      if (!LOCAL_CREATE_TYPES.includes(type)) return;
+      this.captureCreateDraft();
+      const previous = this.createDraft;
+      const next = defaultCreateDraft(type);
+      const kindOf = (value) => (value === 'single_choice' || value === 'multiple_choice' ? 'choice' : value);
+      const keepAnswer = kindOf(previous.type) === kindOf(type);
+      next.label = previous.label;
+      next.title = previous.title;
+      next.setName = previous.setName;
+      next.tags = previous.tags;
+      next.note = previous.note;
+      next.status = previous.status;
+      next.stem = previous.stem;
+      next.officialAnswer = previous.officialAnswer;
+      next.explanation = previous.explanation;
+      next.samplesIn = previous.samplesIn;
+      next.samplesOut = previous.samplesOut;
+      next.hints = previous.hints;
+      next.language = previous.language;
+      next.referenceCode = previous.referenceCode;
+      next.myCode = previous.myCode;
+      next.folderIds = (previous.folderIds || []).slice();
+      next.myAnswer = keepAnswer ? previous.myAnswer : '';
+      next.optionsText = previous.optionsText && previous.optionsText.trim() ? previous.optionsText : next.optionsText;
+      this.createDraft = next;
+      this.store.state.settings.lastCreateType = type;
+      this.store.save(true);
+      this.renderCreateForm();
+    }
+
+    loadCreateTemplate() {
+      this.captureCreateDraft();
+      const draft = this.createDraft;
+      const template = createTemplateText(draft.type);
+      if (!Core.normalizeWhitespace(draft.stem) && template.stem) draft.stem = template.stem;
+      if (!Core.normalizeWhitespace(draft.officialAnswer) && template.officialAnswer) draft.officialAnswer = template.officialAnswer;
+      if (!draft.samplesIn && template.samplesIn) draft.samplesIn = template.samplesIn;
+      if (!draft.samplesOut && template.samplesOut) draft.samplesOut = template.samplesOut;
+      if (!draft.hints && template.hints) draft.hints = template.hints;
+      if (isChoiceDraft(draft) && !parseOptionText(draft.optionsText).length) draft.optionsText = 'A. \nB. \nC. \nD. ';
+      this.renderCreateForm();
+      this.toast('已填入模板占位内容，替换成你自己的题目即可');
+    }
+
+    createFolderForCreate() {
+      this.captureCreateDraft();
+      const name = prompt('新建收藏夹名称');
+      if (!name || !name.trim()) return;
+      try {
+        const folder = this.store.addFolder(name.trim(), null);
+        this.createDraft.folderIds = Core.unique([...(this.createDraft.folderIds || []), folder.id]);
+        this.renderCreateForm();
+        this.toast('已创建收藏夹：' + folder.name);
+      } catch (error) {
+        this.toast(error.message || '创建收藏夹失败', 'error');
+      }
+    }
+
+    async saveCreateProblem() {
+      this.captureCreateDraft();
+      const draft = this.createDraft;
+      const title = Core.normalizeWhitespace(draft.title) || Core.normalizeWhitespace(draft.label) || '未命名题目';
+      if (!Core.normalizeWhitespace(draft.stem) && !Core.normalizeWhitespace(draft.title)) {
+        this.toast('请至少填写标题或题干', 'error');
+        return;
+      }
+      const existing = this.editingLocalId ? this.store.state.bookmarks[this.editingLocalId] : null;
+      const setName = Core.normalizeWhitespace(draft.setName) || '本地题库';
+      const host = (typeof location !== 'undefined' && location.host) || 'pintia.cn';
+      const problemSetId = existing && existing.problemSetId ? existing.problemSetId : Core.localProblemSetId(setName);
+      const problemId = existing && existing.problemId ? existing.problemId : Core.createLocalProblemId();
+      const url = 'https://' + host + '/problem-sets/' + encodeURIComponent(problemSetId) + '/problems/' + problemId;
+      const folderIds = (draft.folderIds || []).length ? draft.folderIds.slice() : [this.store.state.settings.defaultFolderId || Core.DEFAULT_FOLDER_ID];
+      const tags = String(draft.tags || '').split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+      const created = Core.createBookmark({
+        id: existing ? existing.id : undefined,
+        problemId,
+        problemSetId,
+        problemSetName: setName,
+        host,
+        url,
+        title,
+        label: Core.normalizeWhitespace(draft.label),
+        type: draft.type,
+        folderIds,
+        tags,
+        note: draft.note,
+        status: draft.status,
+        createdAt: existing ? existing.createdAt : undefined,
+      }, { preserveId: true, preserveTimes: Boolean(existing) });
+      const snapshot = buildLocalSnapshot(created, draft);
+      const baseAnswer = (existing && existing.answer) || created.answer;
+      const baseAi = (baseAnswer && baseAnswer.ai) || {};
+      created.answer = Object.assign({}, baseAnswer, {
+        visibility: 'revealed',
+        officialAnswer: Core.normalizeWhitespace(draft.officialAnswer),
+        explanation: Core.normalizeWhitespace(draft.explanation),
+        source: 'manual',
+        revealedAt: snapshot.capturedAt,
+        lastCheckedAt: snapshot.capturedAt,
+      });
+      const manualCode = Core.normalizeWhitespace(draft.referenceCode);
+      const manualOnly = manualCode && !baseAi.analysis && !baseAi.answer && !baseAi.skillId;
+      created.answer.ai = Core.normalizeAi(Object.assign({}, baseAi, {
+        referenceCode: draft.referenceCode || '',
+        skillId: manualOnly ? 'manual' : baseAi.skillId,
+        model: manualOnly ? '手动录入' : baseAi.model,
+        generatedAt: manualOnly ? snapshot.capturedAt : baseAi.generatedAt,
+      }));
+      const saved = this.store.upsert(created);
+      this.store.updateBookmark(saved.id, {
+        title,
+        label: Core.normalizeWhitespace(draft.label),
+        type: Core.normalizeProblemType(draft.type),
+        problemSetId,
+        problemSetName: setName,
+        folderIds,
+        tags,
+        note: Core.normalizeWhitespace(draft.note),
+        status: Core.STATUS_LABELS[draft.status] ? draft.status : 'todo',
+        content: {
+          status: 'full',
+          capturedAt: snapshot.capturedAt,
+          contentHash: snapshot.contentHash,
+          url,
+          title,
+          answerVisibility: 'revealed',
+        },
+        answer: created.answer,
+        submissions: existing ? existing.submissions || [] : [],
+      });
+      this.store.state.settings.lastCreateType = Core.normalizeProblemType(draft.type);
+      this.store.save(true);
+      await this.snapshotStore.put(snapshot);
+      const wasEditing = Boolean(existing);
+      this.editingLocalId = '';
+      this.render();
+      this.closeModal('create');
+      if (wasEditing && this.isModalOpen('snapshot')) await this.openSnapshot(saved.id);
+      this.toast(wasEditing ? '题目已更新' : '题目已保存到收藏夹');
+    }
     openEditor(bookmarkId) {
       const bookmark = this.store.state.bookmarks[bookmarkId];
       if (!bookmark) return;
@@ -5719,6 +7042,8 @@ button {
     }
 
     renderEditor(bookmark, forceFolderId) {
+      const captureButton = this.shadow.getElementById('ptafCaptureBookmark');
+      if (captureButton) captureButton.textContent = Core.isLocalProblem(bookmark) ? '编辑题目内容' : '更新快照与提交';
       const body = this.shadow.getElementById('ptafEditorBody');
       const forcedFolderId = forceFolderId || this.editorForcedFolderId || '';
       const folders = Object.values(this.store.state.folders)
@@ -5788,6 +7113,11 @@ button {
     }
 
     async captureCurrentBookmark() {
+      const currentEditBookmark = this.store.state.bookmarks[this.currentEditId];
+      if (currentEditBookmark && Core.isLocalProblem(currentEditBookmark)) {
+        await this.openCreateProblem(currentEditBookmark.id);
+        return;
+      }
       const bookmark = this.store.state.bookmarks[this.currentEditId];
       if (!bookmark) return;
       await this.captureBookmark(bookmark.id);
@@ -5838,6 +7168,11 @@ button {
       this.currentSnapshotId = bookmarkId;
       const snapshot = await this.snapshotStore.get(bookmarkId);
       const body = this.shadow.getElementById('ptafSnapshotBody');
+      const recoveredTitle = recoverSnapshotTitle(snapshot, bookmark);
+      if (recoveredTitle && recoveredTitle !== bookmark.title) {
+        this.store.updateBookmark(bookmarkId, { title: recoveredTitle });
+        bookmark.title = recoveredTitle;
+      }
       this.shadow.getElementById('ptafSnapshotTitle').textContent = bookmarkDisplayTitle(bookmark);
       if (!snapshot) {
         body.innerHTML = '<div class="ptaf-empty">还没有本地快照。<br>请在原题页面点击“刷新快照”。</div>';
@@ -5854,7 +7189,11 @@ button {
         return;
       }
 
-      const isCodeProblem = ['function', 'programming'].includes(Core.normalizeProblemType(bookmark.type));
+      const problemType = Core.normalizeProblemType(bookmark.type);
+      const isCodeProblem = ['function', 'programming'].includes(problemType);
+      const isProgramFillProblem = problemType === 'program_fill' || Boolean(snapshot.programFillBlank && snapshot.programFillBlank.blanks);
+      const programFillBlank = isProgramFillProblem ? snapshotProgramFillBlank(snapshot) : null;
+      const localProblem = Core.isLocalProblem(bookmark);
       const latestSubmission = (bookmark.submissions || [])[0];
       const judgeConstraints = snapshot.judgeConstraints || {};
       const judgeCriteria = [
@@ -5871,6 +7210,7 @@ button {
       const code = hasLocalCode ? snapshot.localCode : originalCode;
       const sourceAnswers = Array.isArray(snapshot.localAnswers) ? snapshot.localAnswers : (snapshot.answers || []);
       const hasLocalAnswers = Array.isArray(snapshot.localAnswers);
+      const hasLocalProgramFill = Boolean(snapshot.localProgramFillBlank) || Boolean(hasLocalAnswers && snapshot.programFillBlank);
       const answerValues = sourceAnswers
         .map((answer) => String(answer.answer || '').replace(/\s+/g, ''))
         .filter(Boolean);
@@ -5879,7 +7219,7 @@ button {
       const answerChips = effectiveAnswerValues
         .map((answer) => `<span class="ptaf-answer-chip">${escapeHtml(answer)}</span>`)
         .join('');
-      const choiceGroups = isCodeProblem
+      const choiceGroups = isCodeProblem || isProgramFillProblem
         ? []
         : Array.isArray(snapshot.choiceGroups) && snapshot.choiceGroups.length
           ? snapshot.choiceGroups
@@ -5887,7 +7227,14 @@ button {
       this.currentSnapshotChoiceGroups = choiceGroups;
       this.currentSnapshotRecord = snapshot;
       this.currentSnapshotIsCodeProblem = isCodeProblem;
-      const myAnswer = isCodeProblem
+      this.currentSnapshotIsProgramFill = isProgramFillProblem;
+      const myAnswer = isProgramFillProblem
+        ? `<div class="ptaf-field">
+            <div class="ptaf-answer-header"><label>我的作答</label><div class="ptaf-card-actions" style="margin:0"><span class="ptaf-edit-actions">${hasLocalProgramFill ? '<span class="ptaf-badge warning">本地修改</span>' : ''}<button class="ptaf-btn small" type="button" data-ptaf-snapshot-edit-answer>编辑填空</button>${hasLocalProgramFill ? '<button class="ptaf-btn small" type="button" data-ptaf-snapshot-reset-answer>恢复原始</button>' : ''}</span></div></div>
+            <div class="ptaf-answer-summary ptaf-program-fill-answer-summary">${programFillListHtml(programFillBlank)}</div>
+            ${programFillBlank && programFillBlank.templateCode ? `<details class="ptaf-details ptaf-program-fill-template"><summary>查看完整代码模板</summary>${snapshotCodeBlockHtml(programFillBlank.templateCode, hasKnownProgramFillLanguage(programFillBlank.language) ? programFillBlank.language : '代码')}</details>` : ''}
+          </div>`
+        : isCodeProblem
         ? `<div class="ptaf-field">
             <div class="ptaf-answer-header"><label>我的作答</label><div class="ptaf-card-actions" style="margin:0"><span class="ptaf-edit-actions">${hasLocalCode ? '<span class="ptaf-badge warning">本地修改</span>' : ''}<button class="ptaf-btn small" type="button" data-ptaf-snapshot-edit-answer>编辑代码</button>${hasLocalCode ? '<button class="ptaf-btn small" type="button" data-ptaf-snapshot-reset-answer>恢复原始</button>' : ''}</span></div></div>
             <div class="ptaf-card-meta">${latestSubmission ? `${escapeHtml(latestSubmission.language)} · ${escapeHtml(latestSubmission.rawStatus || latestSubmission.status)}${latestSubmission.score != null ? ` · ${latestSubmission.score}${latestSubmission.maxScore != null ? `/${latestSubmission.maxScore}` : ''}` : ''}` : code ? '代码草稿（尚未判定）' : '暂无提交或代码'}</div>
@@ -5916,8 +7263,10 @@ button {
         blockquote{background:#17243a!important;color:#b8cbe0!important;border-left-color:#4b6b92!important}
         .ptaf-snapshot-code{background:#0f172a!important;border-color:#2a3c57!important}
         .ptaf-snapshot-code-head{background:#17243a!important;color:#c9d7ea!important;border-color:#2a3c57!important}
+        .ptaf-snapshot-code-body{background:#0f172a!important}
         .ptaf-snapshot-line-numbers{background:#111c31!important;color:#8ea4be!important;border-color:#2a3c57!important}
-        .ptaf-snapshot-code-content{color:#e5edf7!important}
+        .ptaf-snapshot-code-content{background:#0f172a!important;color:#e5edf7!important}
+        .ptaf-snapshot-code-content code{color:inherit!important}
         .ptaf-snapshot-root input[type="radio"],.ptaf-snapshot-root input[type="checkbox"]{accent-color:#5aa2f3}
       </style>` : '';
       const snapshotFallbackStyle = `<style>
@@ -5929,12 +7278,12 @@ button {
         td,th{border:1px solid #dbe4ef;padding:6px 9px}
         .ptaf-snapshot-code{border:1px solid #dbe4ef;border-radius:8px;overflow:hidden;background:#fff;margin:10px 0}
         .ptaf-snapshot-code-head{padding:7px 10px;background:#eef3f8;border-bottom:1px solid #dbe4ef;color:#53657a;font:12px/1.4 Consolas,Monaco,monospace}
-        .ptaf-snapshot-code-body{display:grid;grid-template-columns:auto minmax(0,1fr);max-height:430px;overflow:auto}
-        .ptaf-snapshot-line-numbers,.ptaf-snapshot-code-content{margin:0;padding:11px 0;border-radius:0;background:transparent;font:17px/1.75 Consolas,Monaco,"Courier New",monospace;tab-size:4}
-        .ptaf-snapshot-line-numbers{min-width:42px;padding-right:9px;color:#94a3b8;background:#f8fafc;border-right:1px solid #e2e8f0;text-align:right;user-select:none;white-space:pre}
-        .ptaf-snapshot-code-content{color:#1f2937;white-space:pre}
-        .ptaf-snapshot-code-content code{font:inherit}
-        .token-keyword{color:#7c3aed;font-weight:600}.token-string{color:#b45309}.token-number{color:#0f766e}.token-comment{color:#64748b;font-style:italic}.token-preprocessor{color:#0b6bcb;font-weight:600}.token-function{color:#1d4ed8}.token-identifier{color:#1f2937}
+        .ptaf-snapshot-code-body{display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;align-items:start!important;max-height:430px;overflow:auto;background:#fff!important}
+        .ptaf-snapshot-line-numbers,.ptaf-snapshot-code-content{display:block!important;box-sizing:border-box!important;min-width:0!important;width:auto!important;height:auto!important;margin:0!important;padding:11px 0!important;border-radius:0!important;font:17px/1.75 Consolas,Monaco,"Courier New",monospace!important;tab-size:4!important}
+        .ptaf-snapshot-line-numbers{grid-column:1!important;padding-right:9px!important;color:#94a3b8!important;background:#f8fafc!important;border-right:1px solid #e2e8f0!important;text-align:right!important;user-select:none!important;white-space:pre!important}
+        .ptaf-snapshot-code-content{grid-column:2!important;padding-left:12px!important;overflow:visible!important;color:#1f2937!important;background:#fff!important;white-space:pre!important}
+        .ptaf-snapshot-code-content code{font:inherit!important;color:inherit!important}
+        .token-keyword{color:#7c3aed!important;font-weight:600!important}.token-string{color:#b45309!important}.token-number{color:#0f766e!important}.token-comment{color:#64748b!important;font-style:italic!important}.token-preprocessor{color:#0b6bcb!important;font-weight:600!important}.token-function{color:#1d4ed8!important}.token-identifier{color:#1f2937!important}
         .cm-gutters{padding-top:8px!important}
         .ptaf-snapshot-root input[type="radio"],.ptaf-snapshot-root input[type="checkbox"]{pointer-events:auto!important;cursor:pointer}.ptaf-snapshot-root select,.ptaf-snapshot-root button{pointer-events:none!important}
       </style>`;
@@ -5947,7 +7296,7 @@ button {
         <div class="ptaf-snapshot-layout ${layoutClass}" style="--ptaf-split-left: ${Math.round(splitRatio * 100)}%">
           <section class="ptaf-snapshot-pane ptaf-snapshot-original-pane">
             <div class="ptaf-card-meta">保存时间：${escapeHtml(Core.formatDate(snapshot.capturedAt))} · ${escapeHtml(snapshot.contentHash || '')}</div>
-            <div class="ptaf-field"><label>原页面快照</label><iframe class="ptaf-snapshot-frame" sandbox="allow-same-origin" srcdoc="${escapeHtml(srcdoc)}"></iframe></div>
+            <div class="ptaf-field"><label>${localProblem ? '题目内容' : '原页面快照'}</label><iframe class="ptaf-snapshot-frame" sandbox="allow-same-origin" srcdoc="${escapeHtml(srcdoc)}"></iframe></div>
           </section>
           <div class="ptaf-split-resizer" data-ptaf-split-resizer title="拖动调整左右宽度"></div>
           <section class="ptaf-snapshot-pane ptaf-snapshot-answer-pane">
@@ -5958,16 +7307,30 @@ button {
       `;
       this.openModal('snapshot');
       const snapshotFrame = body.querySelector('.ptaf-snapshot-frame');
-      if (snapshotFrame && !isCodeProblem) this.bindSnapshotIframeInteractions(snapshotFrame);
+      if (snapshotFrame && !isCodeProblem && !isProgramFillProblem) this.bindSnapshotIframeInteractions(snapshotFrame);
       const layoutButton = this.shadow.getElementById('ptafToggleSnapshotLayout');
       if (layoutButton) layoutButton.textContent = this.snapshotLayout === 'split' ? '单栏查看' : '并排查看';
+      const originalButton = this.shadow.getElementById('ptafOpenOriginal');
+      const refreshButton = this.shadow.getElementById('ptafRefreshSnapshot');
+      const editLocalButton = this.shadow.getElementById('ptafEditLocalProblem');
+      if (originalButton) originalButton.hidden = localProblem;
+      if (refreshButton) refreshButton.hidden = localProblem;
+      if (editLocalButton) editLocalButton.hidden = !localProblem;
       this.updateSnapshotNavButtons();
     }
     beginSnapshotAnswerEdit() {
       const body = this.shadow.getElementById('ptafSnapshotBody');
       const actions = body.querySelector('.ptaf-edit-actions');
       if (!actions) return;
-      if (this.currentSnapshotIsCodeProblem) {
+      if (this.currentSnapshotIsProgramFill) {
+        const summary = body.querySelector('.ptaf-program-fill-answer-summary');
+        const programFillBlank = snapshotProgramFillBlank(this.currentSnapshotRecord);
+        if (summary && programFillBlank) {
+          summary.innerHTML = programFillListHtml(programFillBlank, { editing: true, showHeader: false });
+          const firstInput = summary.querySelector('[data-ptaf-program-blank-input]');
+          if (firstInput) firstInput.focus();
+        }
+      } else if (this.currentSnapshotIsCodeProblem) {
         const viewer = body.querySelector('[data-ptaf-snapshot-code-viewer]');
         const code = viewer?.querySelector('code')?.textContent || '';
         const textarea = document.createElement('textarea');
@@ -6085,7 +7448,22 @@ button {
       const snapshot = this.currentSnapshotRecord;
       if (!snapshot) return;
       const body = this.shadow.getElementById('ptafSnapshotBody');
-      if (this.currentSnapshotIsCodeProblem) {
+      if (this.currentSnapshotIsProgramFill) {
+        const source = snapshotProgramFillBlank(snapshot);
+        if (!source) return;
+        const inputs = Array.from(body.querySelectorAll('[data-ptaf-program-blank-input]'));
+        const localProgramFillBlank = {
+          language: source.language,
+          templateCode: source.templateCode,
+          totalScore: source.totalScore,
+          blanks: source.blanks.map((blank, index) => {
+            const input = inputs.find((element) => Number(element.getAttribute('data-index')) === index);
+            return { ...blank, answer: input ? input.value.trim() : blank.answer };
+          }),
+        };
+        snapshot.localProgramFillBlank = localProgramFillBlank;
+        snapshot.localAnswers = programFillAnswers(localProgramFillBlank);
+      } else if (this.currentSnapshotIsCodeProblem) {
         const editor = body.querySelector('#ptafSnapshotCodeEditor');
         snapshot.localCode = editor ? editor.value : snapshot.localCode || '';
       } else {
@@ -6122,6 +7500,7 @@ button {
       }
       delete snapshot.localCode;
       delete snapshot.localAnswers;
+      delete snapshot.localProgramFillBlank;
       delete snapshot.editedAt;
       await this.snapshotStore.put(snapshot);
       this.toast('已恢复原始快照内容');
@@ -6582,15 +7961,13 @@ button {
 
   function injectSidebarEntry() {
     const path = location.pathname;
-    const isExamProblemListPage = /^\/problem-sets\/[^/]+\/exam\/problems(?:\/|$)/.test(path)
-      && !new URL(location.href).searchParams.has('problemSetProblemId');
-    if (isExamProblemListPage) {
+    const shouldInject = /\/problem-sets\/(?:active|all|dashboard)/.test(path) || /\/overview$/.test(path);
+    if (!shouldInject) {
       document.querySelectorAll('[data-ptaf-sidebar-entry]').forEach((host) => host.remove());
       return;
     }
     const sidebar = document.querySelector('[data-sidebar="sidebar"]');
     if (!sidebar) return;
-    const labelMode = /\/problem-sets\/(?:active|all|dashboard)/.test(path) || /\/overview$/.test(path);
     let host = sidebar.querySelector('[data-ptaf-sidebar-entry]');
     if (!host) {
       host = document.createElement("div");
@@ -6616,7 +7993,7 @@ button {
       const parent = header || sidebar;
       parent.insertBefore(host, parent.firstChild);
     }
-    host.setAttribute("data-mode", labelMode ? "label" : "icon");
+    host.setAttribute("data-mode", "label");
     const button = host.shadowRoot && host.shadowRoot.querySelector("button");
     if (button) button.title = "打开 PTA 收藏夹";
   }
@@ -6717,6 +8094,7 @@ button {
     if (typeof GM_registerMenuCommand !== 'function') return;
     GM_registerMenuCommand('打开 PTA 收藏夹', () => ui.openDrawer());
     GM_registerMenuCommand('收藏当前题目', () => collectCurrentProblem());
+    GM_registerMenuCommand('新建题目（快速创建）', () => ui.openCreateProblem());
     GM_registerMenuCommand('导出 Markdown', () => ui.exportMarkdown());
     GM_registerMenuCommand('导出 JSON 备份', () => ui.exportJson());
     GM_registerMenuCommand('快捷键说明', () => ui.showShortcutHelp());
@@ -6736,12 +8114,28 @@ button {
     store.save(true);
   }
 
+  async function repairNoisyBookmarkTitles() {
+    let changed = false;
+    for (const bookmark of Object.values(store.state.bookmarks || {})) {
+      if (!Core.isCollected(bookmark) || !hasSnapshotTitleNoise(bookmark.title)) continue;
+      const snapshot = await snapshotStore.get(bookmark.id).catch(() => null);
+      const recovered = recoverSnapshotTitle(snapshot, bookmark);
+      if (!recovered || recovered === bookmark.title) continue;
+      bookmark.title = recovered;
+      if (bookmark.content) bookmark.content.title = recovered;
+      bookmark.updatedAt = Date.now();
+      changed = true;
+    }
+    if (changed) store.save(true);
+  }
+
   async function init() {
     await snapshotStore.open();
     if (navigator.storage && navigator.storage.persist) {
       navigator.storage.persist().catch((error) => warn('请求持久化存储失败', error));
     }
     await cleanupUncollected();
+    await repairNoisyBookmarkTitles();
     ui.mount();
     initialized = true;
     registerMenuCommands();

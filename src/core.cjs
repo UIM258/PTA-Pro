@@ -12,8 +12,11 @@
   const STORAGE_VERSION = 1;
   const DEFAULT_FOLDER_ID = 'default';
 
+  const LOCAL_PROBLEM_PREFIX = 'local-';
+
   const DEFAULT_SHORTCUTS = {
     toggleDrawer: 'Alt+Shift+F',
+    createProblem: 'Alt+Shift+N',
     toggleCurrentFavorite: 'Alt+Shift+S',
     toggleBatchMode: 'Alt+Shift+B',
     editSnapshotAnswer: 'Alt+Shift+E',
@@ -28,6 +31,7 @@
     multiple_choice: '多选题',
     true_false: '判断题',
     fill_blank: '填空题',
+    program_fill: '程序填空题',
     function: '函数题',
     programming: '编程题',
     short_answer: '简答题',
@@ -51,6 +55,7 @@
     ['single_choice', /单选|单项选择题|single\s*choice/i],
     ['multiple_choice', /多选|多项选择题|multiple\s*choice/i],
     ['true_false', /判断|正误|true\s*\/\s*false|true\s*or\s*false/i],
+    ['program_fill', /程序填空|代码填空|fill\s*in\s*(?:the\s*)?code|code\s*completion/i],
     ['fill_blank', /填空|fill\s*in\s*the\s*blank/i],
     ['function', /函数题|函数设计|function\s+problem|function\s+question/i],
     ['programming', /编程|程序设计|programming|code\s+problem/i],
@@ -114,6 +119,7 @@
       updatedAt: createdAt,
       settings: {
         defaultFolderId: DEFAULT_FOLDER_ID,
+        lastCreateType: 'single_choice',
         snapshotByDefault: true,
         openDetailAfterCollect: false,
         maxSubmissions: 8,
@@ -639,6 +645,25 @@
     return Boolean(bookmark && Array.isArray(bookmark.folderIds) && bookmark.folderIds.length > 0);
   }
 
+  function isLocalProblem(bookmark) {
+    if (!bookmark) return false;
+    if (bookmark.local === true) return true;
+    return String(bookmark.problemId || '').startsWith(LOCAL_PROBLEM_PREFIX);
+  }
+
+  function localProblemSetId(name) {
+    const text = normalizeWhitespace(name) || '本地创建';
+    let hash = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+    }
+    return LOCAL_PROBLEM_PREFIX + 'set-' + hash.toString(36);
+  }
+
+  function createLocalProblemId() {
+    return LOCAL_PROBLEM_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
   function groupBookmarks(state) {
     const bookmarks = Object.values(state.bookmarks || {}).filter(isCollected);
     const setMap = new Map();
@@ -1002,6 +1027,10 @@
     listUserFolders,
     groupBookmarks,
     isCollected,
+    isLocalProblem,
+    localProblemSetId,
+    createLocalProblemId,
+    LOCAL_PROBLEM_PREFIX,
     matchesSelection,
     bookmarkOrderKey,
     sortBookmarksByStoredOrder,
