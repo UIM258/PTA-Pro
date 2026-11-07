@@ -2,7 +2,7 @@
 // @name         PTA 收藏夹
 // @name:zh-CN   PTA 收藏夹
 // @namespace    https://github.com/UIM258/PTA-Pro
-// @version      0.38.2
+// @version      0.38.3
 // @description  面向 PTA（拼题A）的收藏夹脚本：收藏分类、快速新建题目、本地快照、判题记录、AI 解析与导入导出。
 // @author       UIM258
 // @homepageURL  https://github.com/UIM258/PTA-Pro
@@ -20,6 +20,7 @@
 // @grant        GM_deleteValue
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
+// @grant        unsafeWindow
 // @run-at       document-idle
 // @connect      *
 // @noframes
@@ -1095,7 +1096,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.38.2';
+  const APP_VERSION = '0.38.3';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -2177,6 +2178,7 @@
   }
 
   function sanitizedClone(element) {
+    const codeEditorContents = collectCodeEditorContents(element);
     const clone = element.cloneNode(true);
     clone.querySelectorAll('script, style, link, noscript, template, iframe, object, embed, form, [data-ptaf], #ptaf-root').forEach((node) => node.remove());
     clone.querySelectorAll('button, [role="button"], .pc-button').forEach((node) => {
@@ -2196,18 +2198,18 @@
     });
 
     const replacedEditors = new Set();
+    let codeEditorIndex = 0;
     clone.querySelectorAll('.codeEditor_WDyZc, .cm-editor').forEach((editor) => {
-      const holder = editor.closest('[data-code]') || editor.closest('.codeEditor_WDyZc') || editor;
+      const holder = codeEditorHolder(editor);
       if (replacedEditors.has(holder)) return;
       replacedEditors.add(holder);
-      const code = readCodeElement(editor);
+      const captured = codeEditorContents[codeEditorIndex];
+      codeEditorIndex += 1;
+      const code = captured && captured.code || readCodeElement(editor);
       if (!code.trim()) return;
-      let label = holder.getAttribute && holder.getAttribute('data-lang') || '';
-      const context = holder.parentElement ? String(holder.parentElement.innerText || holder.parentElement.textContent || '') : '';
-      const languageMatch = context.match(/\[\s*((?:C\+\+|C|Java|Python|Go|JavaScript)[^\]]*)\s*\]/i);
-      if (!label && languageMatch) label = languageMatch[1];
+      const label = captured && captured.label || codeEditorLabel(holder);
       const template = document.createElement('template');
-      template.innerHTML = snapshotCodeBlockHtml(code, label || '代码');
+      template.innerHTML = snapshotCodeBlockHtml(code, label);
       const replacement = template.content.firstElementChild;
       if (replacement) holder.replaceWith(replacement);
     });
@@ -2649,14 +2651,92 @@
     };
   }
 
+  function normalizeCodeText(value) {
+    return String(value || '')
+      .replace(/\u200b/g, '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\r\n?/g, '\n');
+  }
+
+  // CodeMirror only keeps part of long documents in the DOM. PTA's editor
+  // component exposes the complete value through its nearest React fiber.
+  function reactFiberCodeEditorValue(element) {
+    let node = element;
+    for (let nodeDepth = 0; node && nodeDepth < 6; nodeDepth += 1, node = node.parentElement) {
+      const fiberKey = Object.keys(node).find((key) => key.startsWith('__reactFiber$'));
+      if (!fiberKey) continue;
+      let fiber = node[fiberKey];
+      for (let fiberDepth = 0; fiber && fiberDepth < 12; fiberDepth += 1, fiber = fiber.return) {
+        const props = fiber.memoizedProps;
+        if (!props || typeof props !== 'object') continue;
+        const isCodeEditor = props.languageHint || props.abilities || props.compiler || props.onChangeProgram || props.initialProgram;
+        if (!isCodeEditor) continue;
+        const source = [props.value, props.program, props.initialProgram, props.code]
+          .find((value) => typeof value === 'string' && value.trim());
+        if (source) return normalizeCodeText(source);
+      }
+      return '';
+    }
+    return '';
+  }
+
+  function uniqueCodeEditorHolders(root) {
+    const holders = [];
+    const seen = new Set();
+    (root || document).querySelectorAll('.codeEditor_WDyZc, .cm-editor').forEach((editor) => {
+      const holder = codeEditorHolder(editor);
+      if (seen.has(holder)) return;
+      seen.add(holder);
+      holders.push(holder);
+    });
+    return holders;
+  }
+
+  // Tampermonkey executes in an isolated world, where page-world fiber
+  // properties are not visible. Requery the editors through unsafeWindow.
+  function unsafeWindowCodeEditorValue(element) {
+    if (typeof unsafeWindow === 'undefined' || !unsafeWindow || !unsafeWindow.document) return '';
+    const localHolders = uniqueCodeEditorHolders(document);
+    const editorIndex = localHolders.indexOf(codeEditorHolder(element));
+    if (editorIndex < 0) return '';
+    const pageHolder = uniqueCodeEditorHolders(unsafeWindow.document)[editorIndex];
+    return reactFiberCodeEditorValue(pageHolder);
+  }
+
+  function reactCodeEditorValue(element) {
+    return reactFiberCodeEditorValue(element) || unsafeWindowCodeEditorValue(element);
+  }
+
   function readCodeElement(element) {
     if (!element) return '';
-    if (element.tagName === 'TEXTAREA') return String(element.value || '').replace(/\r\n?/g, '\n');
+    if (element.tagName === 'TEXTAREA') return normalizeCodeText(element.value);
+    const stateValue = reactCodeEditorValue(element);
+    if (stateValue.trim()) return stateValue;
     const lines = Array.from(element.querySelectorAll('.cm-line, .CodeMirror-line, .view-line'));
     const source = lines.length
       ? lines.map((line) => codeLineText(line)).join('\n')
       : String(element.textContent || '');
-    return source.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n');
+    return normalizeCodeText(source);
+  }
+
+  function codeEditorHolder(editor) {
+    return editor.closest('[data-code]') || editor.closest('.codeEditor_WDyZc') || editor;
+  }
+
+  function codeEditorLabel(holder) {
+    let label = holder && holder.getAttribute && holder.getAttribute('data-lang') || '';
+    const context = holder && holder.parentElement ? String(holder.parentElement.innerText || holder.parentElement.textContent || '') : '';
+    const languageMatch = context.match(/\[\s*((?:C\+\+|C|Java|Python|Go|JavaScript)[^\]]*)\s*\]/i);
+    if (!label && languageMatch) label = languageMatch[1];
+    return label || '代码';
+  }
+
+  function collectCodeEditorContents(root) {
+    const contents = [];
+    uniqueCodeEditorHolders(root).forEach((holder) => {
+      contents.push({ code: readCodeElement(holder), label: codeEditorLabel(holder) });
+    });
+    return contents;
   }
 
   function findEditableCodeInPage(root) {
@@ -2979,7 +3059,7 @@
       codeDraft,
       judgeConstraints,
       pageStyles,
-      snapshotVersion: 3,
+      snapshotVersion: 4,
       answerVisibility,
       officialAnswerExcerpt: officialAnswer,
       explanationExcerpt: explanation,
