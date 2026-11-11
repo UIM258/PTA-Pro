@@ -15,7 +15,7 @@
   const DB_NAME = 'pta-favorites-content';
   const DB_VERSION = 1;
   const DB_STORE = 'snapshots';
-  const APP_VERSION = '0.38.3';
+  const APP_VERSION = '0.38.4';
   const HOST_ID = 'ptaf-root';
   const STAR_ATTR = 'data-ptaf-star';
   const LOG_PREFIX = '[PTA 收藏夹]';
@@ -1611,6 +1611,59 @@
     return holders;
   }
 
+  function codeMirrorDocumentValue(element) {
+    if (!element) return '';
+    const content = element.matches && element.matches('.cm-content')
+      ? element
+      : element.querySelector && element.querySelector('.cm-content');
+    try {
+      const doc = content && content.cmTile && content.cmTile.view && content.cmTile.view.state && content.cmTile.view.state.doc;
+      if (doc && typeof doc.toString === 'function') return normalizeCodeText(doc.toString());
+    } catch (error) {}
+    return '';
+  }
+
+  function pageWorldCodeEditorValue(element) {
+    if (typeof unsafeWindow === 'undefined' || !unsafeWindow) return '';
+    const localHolders = uniqueCodeEditorHolders(document);
+    const editorIndex = localHolders.indexOf(codeEditorHolder(element));
+    if (editorIndex < 0) return '';
+    const source = `(function (index) {
+      var seen = new Set();
+      var holders = [];
+      document.querySelectorAll('.codeEditor_WDyZc, .cm-editor').forEach(function (editor) {
+        var holder = editor.closest('[data-code]') || editor.closest('.codeEditor_WDyZc') || editor;
+        if (seen.has(holder)) return;
+        seen.add(holder);
+        holders.push(holder);
+      });
+      var holder = holders[index];
+      var content = holder && holder.querySelector('.cm-content');
+      try {
+        var doc = content && content.cmTile && content.cmTile.view && content.cmTile.view.state && content.cmTile.view.state.doc;
+        return doc ? doc.toString() : '';
+      } catch (error) {
+        return '';
+      }
+    })(${editorIndex})`;
+    try {
+      const value = unsafeWindow.eval(source);
+      if (typeof value === 'string' && value.trim()) return normalizeCodeText(value);
+    } catch (error) {}
+
+    const attribute = `data-ptaf-code-${Math.random().toString(36).slice(2)}`;
+    try {
+      const script = document.createElement('script');
+      script.textContent = `try{document.documentElement.setAttribute(${JSON.stringify(attribute)}, encodeURIComponent(${source} || ''));}catch(error){document.documentElement.setAttribute(${JSON.stringify(attribute)}, '');}`;
+      document.documentElement.appendChild(script);
+      script.remove();
+      const encoded = document.documentElement.getAttribute(attribute);
+      document.documentElement.removeAttribute(attribute);
+      if (encoded) return normalizeCodeText(decodeURIComponent(encoded));
+    } catch (error) {}
+    return '';
+  }
+
   // Tampermonkey executes in an isolated world, where page-world fiber
   // properties are not visible. Requery the editors through unsafeWindow.
   function unsafeWindowCodeEditorValue(element) {
@@ -1629,6 +1682,10 @@
   function readCodeElement(element) {
     if (!element) return '';
     if (element.tagName === 'TEXTAREA') return normalizeCodeText(element.value);
+    const mirrorValue = codeMirrorDocumentValue(element);
+    if (mirrorValue.trim()) return mirrorValue;
+    const pageValue = pageWorldCodeEditorValue(element);
+    if (pageValue.trim()) return pageValue;
     const stateValue = reactCodeEditorValue(element);
     if (stateValue.trim()) return stateValue;
     const lines = Array.from(element.querySelectorAll('.cm-line, .CodeMirror-line, .view-line'));

@@ -26,9 +26,9 @@ GreasyFork：https://greasyfork.org/zh-CN/scripts/595643-pta-%E6%94%B6%E8%97%8F%
 
 ## 当前发布状态
 
-- 当前版本：0.38.3
+- 当前版本：0.38.4
 - GitHub Raw：已同步
-- GreasyFork：已同步（2026-11-07 核验更新地址返回 0.38.3）
+- GreasyFork：已同步（2026-11-11 核验更新地址返回 0.38.4）
 - 构建文件：`outputs/pta-favorites.user.js`
 
 ## 脚本安装地址
